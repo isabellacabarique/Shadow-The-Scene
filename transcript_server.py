@@ -163,9 +163,38 @@ def transcript():
     if not vid:
         return jsonify({"error": "Falta el ID del video"}), 400
 
-    # ── Intento 0: scraping directo de la página de YouTube ──────────────
+    # ── Intento 0a: Invidious (proxy de YouTube, evita bloqueos de IP) ───
+    import urllib.request as _ur, json as _json, re as _re
+    _INVIDIOUS = [
+        "https://inv.nadeko.net",
+        "https://invidious.privacydev.net",
+        "https://invidious.slipfox.xyz",
+        "https://yt.artemislena.eu",
+    ]
+    for _inst in _INVIDIOUS:
+        try:
+            _req = _ur.Request(f"{_inst}/api/v1/captions/{vid}",
+                               headers={"User-Agent": "Mozilla/5.0"})
+            with _ur.urlopen(_req, timeout=8) as _r:
+                _data = _json.loads(_r.read())
+            _captions = _data.get("captions", [])
+            if not _captions:
+                continue
+            _en = next((c for c in _captions if c.get("languageCode","").startswith("en")), _captions[0])
+            _vtt_url = f"{_inst}{_en['url']}"
+            _req2 = _ur.Request(_vtt_url, headers={"User-Agent": "Mozilla/5.0"})
+            with _ur.urlopen(_req2, timeout=8) as _r2:
+                _vtt = _r2.read().decode("utf-8", errors="replace")
+            caps = _parse_vtt(_vtt)
+            if caps:
+                print(f"✅ Subtítulos (Invidious/{_inst}) para {vid} ({len(caps)} segmentos)")
+                return jsonify({"captions": caps})
+        except Exception as _e:
+            print(f"⚠️  Invidious {_inst} falló: {_e}")
+            continue
+
+    # ── Intento 0b: scraping directo de la página de YouTube ─────────────
     try:
-        import urllib.request as _ur, json as _json, re as _re
         _hdrs = {
             "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
             "Accept-Language": "en-US,en;q=0.9",
@@ -173,7 +202,6 @@ def transcript():
         req0 = _ur.Request(f"https://www.youtube.com/watch?v={vid}", headers=_hdrs)
         with _ur.urlopen(req0, timeout=12) as resp:
             html = resp.read().decode("utf-8", errors="replace")
-
         m = _re.search(r'"captionTracks":(\[.*?\])', html)
         if m:
             tracks = _json.loads(m.group(1))
@@ -181,7 +209,6 @@ def transcript():
                 (t for t in tracks if t.get("languageCode","").startswith("en") and t.get("kind")!="asr"),
                 next((t for t in tracks if t.get("languageCode","").startswith("en")), None)
             ) or (tracks[0] if tracks else None)
-
             if en and en.get("baseUrl"):
                 cap_url = en["baseUrl"] + "&fmt=json3"
                 req1 = _ur.Request(cap_url, headers={"User-Agent": _hdrs["User-Agent"]})
@@ -192,7 +219,7 @@ def transcript():
                     print(f"✅ Subtítulos (scraping) para {vid} ({len(caps)} segmentos)")
                     return jsonify({"captions": caps})
     except Exception as e:
-        print(f"⚠️  Intento 0 (scraping) falló: {e}")
+        print(f"⚠️  Intento 0b (scraping) falló: {e}")
 
     langs = ["en", "en-US", "en-GB", "en-CA", "en-AU"]
     api = YouTubeTranscriptApi()
