@@ -6,7 +6,6 @@
 <title>Shadow the Scene · Listening Lab</title>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
 <script src="https://www.youtube.com/iframe_api"></script>
-<script src="https://player.vimeo.com/api/player.js"></script>
 <style>
 :root {
   --bg:#1a2a4a; --card:#1e3564; --card2:#243d72;
@@ -400,7 +399,9 @@ const S={
   bonus:1,streak:0,
   timeLeft:30,maxTime:30,
   timerTick:null,answered:false,
-  player:null,vimeoPlayer:null,paused:false,seg:null,
+  player:null,paused:false,seg:null,
+  vimeoIframe:null,vimeoTime:0,vimeoReady:false,
+  timerStarted:false,
   sentenceTimer:null,sentenceWatcher:null,blankResults:[],
   lives:3,
 };
@@ -473,7 +474,7 @@ function finishLoad(caps){
   updateLevelDescs(totalWords);
   S.blanks=makeBlanks(caps,S.pct);
   if(S.blanks.length===0){show('screen-manual');return;}
-  S.idx=0;S.score=0;S.cor=0;S.err=0;S.bonus=1;S.streak=0;S.lives=3;S.answered=false;S.paused=false;updateLives();
+  S.idx=0;S.score=0;S.cor=0;S.err=0;S.bonus=1;S.streak=0;S.lives=3;S.answered=false;S.paused=false;S.vimeoTime=0;S.vimeoReady=false;S.timerStarted=false;updateLives();
   S.blankResults=new Array(S.blanks.length).fill(null);
   show('screen-game');
   initPlayer();
@@ -774,10 +775,49 @@ function distractors(correct,allCaps){
 
 window.onYouTubeIframeAPIReady=()=>{S._ytReady=true;};
 
+// ── Vimeo postMessage helpers ─────────────────────────────────────────────────
+function vimeoPost(method,value){
+  if(!S.vimeoIframe||!S.vimeoIframe.contentWindow) return;
+  const data={method};
+  if(value!==undefined) data.value=value;
+  try{S.vimeoIframe.contentWindow.postMessage(JSON.stringify(data),'https://player.vimeo.com');}catch(e){}
+}
+
+// Single persistent listener for all Vimeo postMessage events
+window.addEventListener('message',function(e){
+  if(S.platform!=='vimeo') return;
+  let d;
+  try{d=typeof e.data==='string'?JSON.parse(e.data):null;}catch(err){return;}
+  if(!d||!d.event) return;
+
+  if(d.event==='ready'&&!S.vimeoReady){
+    S.vimeoReady=true;
+    vimeoPost('addEventListener','timeupdate');
+    vimeoPost('addEventListener','play');
+    vimeoPost('addEventListener','pause');
+    showBlank(0);
+  }
+
+  if(d.event==='timeupdate'&&d.data){
+    S.vimeoTime=d.data.seconds||0;
+    const cap=S.seg?S.seg.cap:null;
+    if(!cap||S.answered||S.paused) return;
+    // Start countdown only when video actually reaches the sentence
+    if(!S.timerStarted&&S.vimeoTime>=cap.start){
+      S.timerStarted=true;
+      startTimer();
+    }
+    // Pause precisely when sentence ends
+    if(S.vimeoTime>=cap.end){
+      clearSentenceTimer();
+      vimeoPost('pause');
+    }
+  }
+});
+
 function initPlayer(){
   try{if(S.player)S.player.destroy();}catch(e){}
-  try{if(S.vimeoPlayer)S.vimeoPlayer.destroy();}catch(e){}
-  S.vimeoPlayer=null;
+  S.vimeoIframe=null; S.vimeoTime=0; S.vimeoReady=false; S.timerStarted=false;
   document.querySelector('.video-col').innerHTML='<div id="yt-player"></div>';
   if(S.platform==='youtube'){
     const tryCreate=()=>{
@@ -785,7 +825,17 @@ function initPlayer(){
       S.player=new YT.Player('yt-player',{
         videoId:S.vid,
         playerVars:{playsinline:1,rel:0,modestbranding:1},
-        events:{onReady(){showBlank(0);}},
+        events:{
+          onReady(){showBlank(0);},
+          onStateChange(ev){
+            // Start timer when YT video actually starts playing (after pre-roll)
+            if(ev.data===YT.PlayerState.PLAYING&&S.seg&&!S.timerStarted&&!S.answered){
+              S.timerStarted=true;
+              clearTimeout(S._ytTimerDelay);
+              S._ytTimerDelay=setTimeout(()=>{if(!S.answered)startTimer();},1500);
+            }
+          }
+        },
       });
     };
     tryCreate();
@@ -797,30 +847,25 @@ function initPlayer(){
     f.frameBorder='0';f.allowFullscreen=true;
     f.allow='autoplay';
     document.getElementById('yt-player').replaceWith(f);
-    if(typeof Vimeo!=='undefined'&&Vimeo.Player){
-      S.vimeoPlayer=new Vimeo.Player(f);
-      S.vimeoPlayer.ready()
-        .then(()=>showBlank(0))
-        .catch(()=>setTimeout(()=>showBlank(0),1200));
-    }else{
-      setTimeout(()=>showBlank(0),1200);
-    }
+    S.vimeoIframe=f;
+    // Fallback: if 'ready' event never fires, show blanks anyway
+    setTimeout(()=>{if(!S.vimeoReady){S.vimeoReady=true;showBlank(0);}},4000);
   }else{showBlank(0);}
 }
 
 function seekPlay(t){
   const pre=Math.max(0,t-1.5);
+  S.timerStarted=false; // timer restarts when video reaches sentence
   if(S.platform==='youtube'){
     try{if(!S.player||!S.player.seekTo)return;S.player.seekTo(pre,true);S.player.playVideo();}catch(e){}
-  }else if(S.platform==='vimeo'&&S.vimeoPlayer){
-    S.vimeoPlayer.setCurrentTime(pre)
-      .then(()=>S.vimeoPlayer.play())
-      .catch(e=>console.warn('Vimeo seek:',e));
+  }else if(S.platform==='vimeo'){
+    vimeoPost('setCurrentTime',pre);
+    vimeoPost('play');
   }
 }
 function pausePlay(){
   if(S.platform==='youtube'){try{if(S.player?.pauseVideo)S.player.pauseVideo();}catch(e){}}
-  else if(S.platform==='vimeo'&&S.vimeoPlayer){S.vimeoPlayer.pause().catch(()=>{});}
+  else if(S.platform==='vimeo'){vimeoPost('pause');}
 }
 function clearSentenceTimer(){
   if(S.sentenceTimer){clearTimeout(S.sentenceTimer);S.sentenceTimer=null;}
@@ -828,24 +873,19 @@ function clearSentenceTimer(){
 }
 function scheduleSentencePause(cap){
   clearSentenceTimer();
-  // Poll position every 200ms; works for YouTube (sync) and Vimeo (async Promise)
-  S.sentenceWatcher=setInterval(async()=>{
-    if(S.answered||S.paused){clearSentenceTimer();return;}
-    try{
-      let t=null;
-      if(S.platform==='youtube'){
-        t=S.player?.getCurrentTime?.()??null;
-      }else if(S.platform==='vimeo'&&S.vimeoPlayer){
-        t=await S.vimeoPlayer.getCurrentTime();
-      }
-      if(t!=null&&t>=cap.end){
-        clearSentenceTimer();
-        pausePlay();
-      }
-    }catch(e){}
-  },200);
-  // Safety fallback: in case SDK fails, pause via timeout
-  const dur=Math.max(3000,(cap.end-cap.start)*1000+2500);
+  // YouTube: poll getCurrentTime() synchronously
+  if(S.platform==='youtube'){
+    S.sentenceWatcher=setInterval(()=>{
+      if(S.answered||S.paused){clearSentenceTimer();return;}
+      try{
+        const t=S.player?.getCurrentTime?.()??null;
+        if(t!=null&&t>=cap.end){clearSentenceTimer();pausePlay();}
+      }catch(e){}
+    },150);
+  }
+  // Vimeo: pausing is handled by the 'timeupdate' message listener above.
+  // Safety fallback for both: in case events/polling miss the exact moment
+  const dur=Math.max(3000,(cap.end-cap.start)*1000+3000);
   S.sentenceTimer=setTimeout(()=>{
     clearSentenceTimer();
     if(!S.answered&&!S.paused) pausePlay();
@@ -853,8 +893,11 @@ function scheduleSentencePause(cap){
 }
 function replaySeg(){
   if(!S.seg)return;
+  clearTimer();
+  S.timerStarted=false;
   seekPlay(S.seg.cap.start);
   scheduleSentencePause(S.seg.cap);
+  setTimeout(()=>{if(!S.answered&&!S.timerStarted){S.timerStarted=true;startTimer();}},4000);
 }
 
 // Returns all blank indices that share the same caption as blanks[idx]
@@ -884,12 +927,15 @@ function showBlank(idx){
   if(S.mode==='selection') setupSelGroup(group);
   else setupTypGroup(group);
 
+  S.timerStarted=false;
   const isNewSentence=cap!==prevCap;
   if(!S.paused&&isNewSentence){
     seekPlay(cap.start);
     scheduleSentencePause(cap);
-    // Start timer after the 1.5s pre-roll so it's synced with the sentence
-    setTimeout(()=>{if(!S.answered)startTimer();},1600);
+    // YouTube: onStateChange starts timer after pre-roll
+    // Vimeo:   timeupdate event starts timer when t >= cap.start
+    // Fallback for both in case events don't fire:
+    setTimeout(()=>{if(!S.answered&&!S.timerStarted){S.timerStarted=true;startTimer();}},4000);
   }else{
     startTimer();
   }
@@ -1227,7 +1273,7 @@ function endGame(){
 }
 
 function restart(){
-  S.idx=0;S.score=0;S.cor=0;S.err=0;S.bonus=1;S.streak=0;S.lives=3;S.answered=false;S.paused=false;updateLives();
+  S.idx=0;S.score=0;S.cor=0;S.err=0;S.bonus=1;S.streak=0;S.lives=3;S.answered=false;S.paused=false;S.vimeoTime=0;S.vimeoReady=false;S.timerStarted=false;updateLives();
   S.blanks=makeBlanks(S.captions,S.pct);
   S.blankResults=new Array(S.blanks.length).fill(null);
   show('screen-game');initPlayer();
