@@ -116,6 +116,21 @@ def vimeo_captions():
         return jsonify({"error": str(e)}), 500
 
 
+def _format_json3(data):
+    caps = []
+    for ev in data.get("events", []):
+        if not ev.get("segs"):
+            continue
+        text = "".join(s.get("utf8", "") for s in ev["segs"]).replace("\n", " ").strip()
+        if not text:
+            continue
+        start = (ev.get("tStartMs", 0)) / 1000
+        dur   = (ev.get("dDurationMs", 2000)) / 1000
+        caps.append({"start": round(start,3), "end": round(start+dur,3),
+                     "dur": round(dur,3), "text": text})
+    return caps
+
+
 def _parse_vtt(vtt):
     import re
     caps = []
@@ -147,6 +162,37 @@ def transcript():
     vid = request.args.get("v", "").strip()
     if not vid:
         return jsonify({"error": "Falta el ID del video"}), 400
+
+    # ── Intento 0: scraping directo de la página de YouTube ──────────────
+    try:
+        import urllib.request as _ur, json as _json, re as _re
+        _hdrs = {
+            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Accept-Language": "en-US,en;q=0.9",
+        }
+        req0 = _ur.Request(f"https://www.youtube.com/watch?v={vid}", headers=_hdrs)
+        with _ur.urlopen(req0, timeout=12) as resp:
+            html = resp.read().decode("utf-8", errors="replace")
+
+        m = _re.search(r'"captionTracks":(\[.*?\])', html)
+        if m:
+            tracks = _json.loads(m.group(1))
+            en = next(
+                (t for t in tracks if t.get("languageCode","").startswith("en") and t.get("kind")!="asr"),
+                next((t for t in tracks if t.get("languageCode","").startswith("en")), None)
+            ) or (tracks[0] if tracks else None)
+
+            if en and en.get("baseUrl"):
+                cap_url = en["baseUrl"] + "&fmt=json3"
+                req1 = _ur.Request(cap_url, headers={"User-Agent": _hdrs["User-Agent"]})
+                with _ur.urlopen(req1, timeout=10) as r2:
+                    data = _json.loads(r2.read())
+                caps = _format_json3(data)
+                if caps:
+                    print(f"✅ Subtítulos (scraping) para {vid} ({len(caps)} segmentos)")
+                    return jsonify({"captions": caps})
+    except Exception as e:
+        print(f"⚠️  Intento 0 (scraping) falló: {e}")
 
     langs = ["en", "en-US", "en-GB", "en-CA", "en-AU"]
     api = YouTubeTranscriptApi()
