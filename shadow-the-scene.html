@@ -6,6 +6,7 @@
 <title>Shadow the Scene · Listening Lab</title>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
 <script src="https://www.youtube.com/iframe_api"></script>
+<script src="https://player.vimeo.com/api/player.js"></script>
 <style>
 :root {
   --bg:#1a2a4a; --card:#1e3564; --card2:#243d72;
@@ -142,6 +143,11 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-heigh
   padding:9px;border-radius:10px;border:1px solid rgba(255,255,255,.25);
   background:transparent;color:#fff;font-size:.88rem;cursor:pointer;transition:background .15s;}
 .btn-replay:hover{background:rgba(255,255,255,.1);}
+.btn-continue{padding:13px;border-radius:12px;border:none;background:#ff9800;
+  color:#fff;font-size:.95rem;font-weight:700;cursor:pointer;width:100%;margin-top:6px;
+  transition:opacity .15s;}
+.btn-continue:hover{opacity:.85;}
+.lives-display{font-size:1.1rem;letter-spacing:1px;}
 .fb{text-align:center;font-size:1rem;font-weight:600;padding:10px;border-radius:8px;display:none;}
 .fb.ok {background:rgba(76,175,80,.25);color:#a5d6a7;display:block;}
 .fb.bad{background:rgba(229,57,53,.25);color:#ef9a9a;display:block;}
@@ -330,6 +336,7 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-heigh
     <div class="sbox"><span class="slabel">Aciertos</span><span class="sval cor" id="g-cor">0</span></div>
     <div class="sbox"><span class="slabel">Fallos</span><span class="sval err" id="g-err">0</span></div>
     <div class="spacer"></div>
+    <div class="sbox"><span class="lives-display" id="g-lives">❤️❤️❤️</span></div>
     <div class="sbox"><span class="slabel">Bonus</span><div class="bonus-ring" id="g-bonus">x1</div></div>
     <button class="icon-btn" onclick="showHelp()" title="Ayuda">?</button>
   </div>
@@ -386,15 +393,16 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-heigh
 
 <script>
 const S={
-  url:'',vid:'',platform:'',
+  url:'',vid:'',platform:'',hash:null,
   level:'',pct:10,mode:'selection',
   captions:[],blanks:[],
   idx:0,score:0,cor:0,err:0,
   bonus:1,streak:0,
   timeLeft:30,maxTime:30,
   timerTick:null,answered:false,
-  player:null,paused:false,seg:null,
-  sentenceTimer:null,blankResults:[],
+  player:null,vimeoPlayer:null,paused:false,seg:null,
+  sentenceTimer:null,sentenceWatcher:null,blankResults:[],
+  lives:3,
 };
 
 function show(id){
@@ -465,7 +473,7 @@ function finishLoad(caps){
   updateLevelDescs(totalWords);
   S.blanks=makeBlanks(caps,S.pct);
   if(S.blanks.length===0){show('screen-manual');return;}
-  S.idx=0;S.score=0;S.cor=0;S.err=0;S.bonus=1;S.streak=0;S.answered=false;S.paused=false;
+  S.idx=0;S.score=0;S.cor=0;S.err=0;S.bonus=1;S.streak=0;S.lives=3;S.answered=false;S.paused=false;updateLives();
   S.blankResults=new Array(S.blanks.length).fill(null);
   show('screen-game');
   initPlayer();
@@ -768,6 +776,8 @@ window.onYouTubeIframeAPIReady=()=>{S._ytReady=true;};
 
 function initPlayer(){
   try{if(S.player)S.player.destroy();}catch(e){}
+  try{if(S.vimeoPlayer)S.vimeoPlayer.destroy();}catch(e){}
+  S.vimeoPlayer=null;
   document.querySelector('.video-col').innerHTML='<div id="yt-player"></div>';
   if(S.platform==='youtube'){
     const tryCreate=()=>{
@@ -785,20 +795,61 @@ function initPlayer(){
     f.src=`https://player.vimeo.com/video/${S.vid}?api=1${hParam}`;
     f.style.cssText='width:100%;aspect-ratio:16/9;';
     f.frameBorder='0';f.allowFullscreen=true;
+    f.allow='autoplay';
     document.getElementById('yt-player').replaceWith(f);
-    setTimeout(()=>showBlank(0),1000);
+    if(typeof Vimeo!=='undefined'&&Vimeo.Player){
+      S.vimeoPlayer=new Vimeo.Player(f);
+      S.vimeoPlayer.ready()
+        .then(()=>showBlank(0))
+        .catch(()=>setTimeout(()=>showBlank(0),1200));
+    }else{
+      setTimeout(()=>showBlank(0),1200);
+    }
   }else{showBlank(0);}
 }
 
 function seekPlay(t){
-  try{if(!S.player||!S.player.seekTo)return;S.player.seekTo(Math.max(0,t-1.5),true);S.player.playVideo();}catch(e){}
+  const pre=Math.max(0,t-1.5);
+  if(S.platform==='youtube'){
+    try{if(!S.player||!S.player.seekTo)return;S.player.seekTo(pre,true);S.player.playVideo();}catch(e){}
+  }else if(S.platform==='vimeo'&&S.vimeoPlayer){
+    S.vimeoPlayer.setCurrentTime(pre)
+      .then(()=>S.vimeoPlayer.play())
+      .catch(e=>console.warn('Vimeo seek:',e));
+  }
 }
-function pausePlay(){try{if(S.player?.pauseVideo)S.player.pauseVideo();}catch(e){}}
-function clearSentenceTimer(){if(S.sentenceTimer){clearTimeout(S.sentenceTimer);S.sentenceTimer=null;}}
-function scheduleSentencePause(cap,onDone){
+function pausePlay(){
+  if(S.platform==='youtube'){try{if(S.player?.pauseVideo)S.player.pauseVideo();}catch(e){}}
+  else if(S.platform==='vimeo'&&S.vimeoPlayer){S.vimeoPlayer.pause().catch(()=>{});}
+}
+function clearSentenceTimer(){
+  if(S.sentenceTimer){clearTimeout(S.sentenceTimer);S.sentenceTimer=null;}
+  if(S.sentenceWatcher){clearInterval(S.sentenceWatcher);S.sentenceWatcher=null;}
+}
+function scheduleSentencePause(cap){
   clearSentenceTimer();
-  const dur=Math.max(1500,(cap.end-cap.start)*1000+600);
-  S.sentenceTimer=setTimeout(()=>{pausePlay();S.sentenceTimer=null;if(onDone)onDone();},dur);
+  // Poll position every 200ms; works for YouTube (sync) and Vimeo (async Promise)
+  S.sentenceWatcher=setInterval(async()=>{
+    if(S.answered||S.paused){clearSentenceTimer();return;}
+    try{
+      let t=null;
+      if(S.platform==='youtube'){
+        t=S.player?.getCurrentTime?.()??null;
+      }else if(S.platform==='vimeo'&&S.vimeoPlayer){
+        t=await S.vimeoPlayer.getCurrentTime();
+      }
+      if(t!=null&&t>=cap.end){
+        clearSentenceTimer();
+        pausePlay();
+      }
+    }catch(e){}
+  },200);
+  // Safety fallback: in case SDK fails, pause via timeout
+  const dur=Math.max(3000,(cap.end-cap.start)*1000+2500);
+  S.sentenceTimer=setTimeout(()=>{
+    clearSentenceTimer();
+    if(!S.answered&&!S.paused) pausePlay();
+  },dur);
 }
 function replaySeg(){
   if(!S.seg)return;
@@ -834,8 +885,14 @@ function showBlank(idx){
   else setupTypGroup(group);
 
   const isNewSentence=cap!==prevCap;
-  if(!S.paused&&isNewSentence){seekPlay(cap.start);scheduleSentencePause(cap);}
-  startTimer();
+  if(!S.paused&&isNewSentence){
+    seekPlay(cap.start);
+    scheduleSentencePause(cap);
+    // Start timer after the 1.5s pre-roll so it's synced with the sentence
+    setTimeout(()=>{if(!S.answered)startTimer();},1600);
+  }else{
+    startTimer();
+  }
 }
 
 function setupTypGroup(group){
@@ -895,7 +952,7 @@ function submitTypGroup(group){
     return{blankIdx,given,correct,ok:norm(given)===norm(correct)};
   });
   if(results.some(r=>!r.given)) return;
-  S.answered=true; clearTimer();
+  S.answered=true; clearTimer(); clearSentenceTimer();
   applyGroupResult(results,'fb-typ');
 }
 
@@ -946,7 +1003,7 @@ function setupSelGroup(group){
 
 function submitSelGroup(group){
   if(S.answered) return;
-  S.answered=true; clearTimer();
+  S.answered=true; clearTimer(); clearSentenceTimer();
   const results=S._selAnswers.map((a,i)=>{
     if(!a){const bi=group[i];return{blankIdx:bi,given:'',correct:S.blanks[bi].word,ok:false};}
     return{...a,ok:norm(a.given)===norm(a.correct)};
@@ -989,7 +1046,7 @@ function applyGroupResult(results,fbId){
     setTimeout(()=>nextIdx<S.blanks.length?showBlank(nextIdx):endGame(),1400);
   }else{
     pausePlay();
-    setTimeout(()=>nextIdx<S.blanks.length?showBlank(nextIdx):endGame(),5000);
+    showContinueBtn(nextIdx);
   }
 }
 
@@ -1062,28 +1119,66 @@ function updTimer(){
 function timeUp(){
   if(S.answered) return;
   S.answered=true;
+  clearSentenceTimer();
   const group=sentenceGroup(S.idx);
-  group.forEach(bi=>{if(!S.blankResults[bi])S.blankResults[bi]={ok:false,correct:S.blanks[bi].word,given:''};});
+  S.lives=Math.max(0,S.lives-1);
+  updateLives();
   S.err+=group.length; S.streak=0; S.bonus=1;
-  buildSentenceBar(S.idx);
-  const words=group.map(bi=>`"${S.blanks[bi].word}"`).join(', ');
-  if(S.mode==='selection'){
-    group.forEach((_,i)=>{
-      const wrap=document.getElementById(`opts-group-${i}`);
-      if(!wrap) return;
-      const correct=S.blanks[group[i]].word;
-      wrap.querySelectorAll('.opt-btn').forEach(btn=>{
-        btn.disabled=true;
-        if(norm(btn.textContent)===norm(correct)){btn.classList.add('ok');btn.style.opacity='1';}
-        else btn.style.opacity='.5';
-      });
-    });
-    setFb('fb-sel',false,`¡Tiempo! Era: ${words}`);
-  }else{setFb('fb-typ',false,`¡Tiempo! Era: ${words}`);}
   refreshStats();
-  const nextIdx=group[group.length-1]+1;
   pausePlay();
-  setTimeout(()=>nextIdx<S.blanks.length?showBlank(nextIdx):endGame(),5000);
+  const nextIdx=group[group.length-1]+1;
+  const fbId=S.mode==='selection'?'fb-sel':'fb-typ';
+  if(S.lives<=0){
+    setFb(fbId,false,'⏱ ¡Tiempo! Sin vidas restantes ❌');
+    showBuyLifeBtn(nextIdx);
+  }else{
+    setFb(fbId,false,`⏱ ¡Tiempo! ${'❤️'.repeat(S.lives)} ${S.lives} vida${S.lives!==1?'s':''} restante${S.lives!==1?'s':''}`);
+    showContinueBtn(nextIdx);
+  }
+}
+
+function showContinueBtn(nextIdx){
+  const panel=S.mode==='selection'
+    ?document.getElementById('sel-panel')
+    :document.getElementById('typ-panel');
+  if(panel.querySelector('.btn-continue')) return;
+  const btn=document.createElement('button');
+  btn.className='btn-continue';
+  btn.textContent='Continuar →';
+  btn.onclick=()=>nextIdx<S.blanks.length?showBlank(nextIdx):endGame();
+  panel.appendChild(btn);
+}
+
+function showBuyLifeBtn(nextIdx){
+  const cost=300;
+  const panel=S.mode==='selection'
+    ?document.getElementById('sel-panel')
+    :document.getElementById('typ-panel');
+  if(S.score>=cost){
+    const buyBtn=document.createElement('button');
+    buyBtn.className='btn-continue';
+    buyBtn.style.background='#9c27b0';
+    buyBtn.textContent=`💜 Comprar vida (-${cost} pts)`;
+    buyBtn.onclick=()=>{
+      S.score-=cost; S.lives=1; updateLives(); refreshStats();
+      buyBtn.remove(); skipBtn.remove();
+      const fbId=S.mode==='selection'?'fb-sel':'fb-typ';
+      setFb(fbId,true,'¡Vida recuperada! Continúa...');
+      showContinueBtn(nextIdx);
+    };
+    panel.appendChild(buyBtn);
+  }
+  const skipBtn=document.createElement('button');
+  skipBtn.className='btn-replay'; skipBtn.style.marginTop='8px';
+  skipBtn.textContent='Continuar sin vida →';
+  skipBtn.onclick=()=>nextIdx<S.blanks.length?showBlank(nextIdx):endGame();
+  panel.appendChild(skipBtn);
+}
+
+function updateLives(){
+  const el=document.getElementById('g-lives');
+  if(!el) return;
+  el.textContent='❤️'.repeat(Math.max(0,S.lives))+'🖤'.repeat(Math.max(0,3-S.lives));
 }
 
 function prevBlank(){
@@ -1132,7 +1227,7 @@ function endGame(){
 }
 
 function restart(){
-  S.idx=0;S.score=0;S.cor=0;S.err=0;S.bonus=1;S.streak=0;S.answered=false;S.paused=false;
+  S.idx=0;S.score=0;S.cor=0;S.err=0;S.bonus=1;S.streak=0;S.lives=3;S.answered=false;S.paused=false;updateLives();
   S.blanks=makeBlanks(S.captions,S.pct);
   S.blankResults=new Array(S.blanks.length).fill(null);
   show('screen-game');initPlayer();
