@@ -163,8 +163,43 @@ def transcript():
     if not vid:
         return jsonify({"error": "Falta el ID del video"}), 400
 
-    # ── Intento 0a: Invidious (proxy de YouTube, evita bloqueos de IP) ───
+    # ── Intento 0a: Piped API (proxy de YouTube) ─────────────────────────
     import urllib.request as _ur, json as _json, re as _re
+    _PIPED = [
+        "https://pipedapi.kavin.rocks",
+        "https://api.piped.yt",
+        "https://piped-api.garudalinux.org",
+        "https://watchapi.whatever.social",
+    ]
+    for _inst in _PIPED:
+        try:
+            _req = _ur.Request(f"{_inst}/streams/{vid}",
+                               headers={"User-Agent": "Mozilla/5.0"})
+            with _ur.urlopen(_req, timeout=8) as _r:
+                _data = _json.loads(_r.read())
+            _subs = _data.get("subtitles", [])
+            if not _subs:
+                continue
+            _en_subs = [s for s in _subs if s.get("code","").startswith("en") and not s.get("autoTranslated")]
+            if not _en_subs:
+                _en_subs = [s for s in _subs if s.get("code","").startswith("en")]
+            if not _en_subs:
+                _en_subs = _subs[:1]
+            if _en_subs:
+                _vtt_url = _en_subs[0].get("url","")
+                if _vtt_url:
+                    _req2 = _ur.Request(_vtt_url, headers={"User-Agent": "Mozilla/5.0"})
+                    with _ur.urlopen(_req2, timeout=8) as _r2:
+                        _vtt = _r2.read().decode("utf-8", errors="replace")
+                    caps = _parse_vtt(_vtt)
+                    if caps:
+                        print(f"✅ Subtítulos (Piped/{_inst}) para {vid} ({len(caps)} segmentos)")
+                        return jsonify({"captions": caps})
+        except Exception as _e:
+            print(f"⚠️  Piped {_inst} falló: {_e}")
+            continue
+
+    # ── Intento 0b: Invidious (proxy alternativo) ─────────────────────────
     _INVIDIOUS = [
         "https://inv.nadeko.net",
         "https://invidious.privacydev.net",
