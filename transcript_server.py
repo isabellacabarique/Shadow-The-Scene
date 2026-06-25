@@ -52,6 +52,96 @@ def index():
     return send_from_directory(str(folder), "shadow-the-scene.html")
 
 
+@app.route("/vimeo-captions")
+def vimeo_captions():
+    vid   = request.args.get("v", "").strip()
+    hash_ = request.args.get("h", "").strip()
+    if not vid:
+        return jsonify({"error": "Falta el ID del video"}), 400
+
+    import urllib.request, json as _json, re as _re
+
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Referer": "https://vimeo.com/",
+        "Origin": "https://vimeo.com",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+    }
+
+    # Intento 1: página del player de Vimeo (extrae JSON incrustado)
+    try:
+        player_url = f"https://player.vimeo.com/video/{vid}"
+        if hash_:
+            player_url += f"?h={hash_}"
+        req = urllib.request.Request(player_url, headers=headers)
+        with urllib.request.urlopen(req, timeout=12) as resp:
+            html = resp.read().decode("utf-8", errors="replace")
+
+        # Buscar text_tracks en el JSON de configuración incrustado
+        m = _re.search(r'"text_tracks"\s*:\s*(\[.*?\])', html, _re.DOTALL)
+        if m:
+            tracks = _json.loads(m.group(1))
+            if tracks:
+                en = next((t for t in tracks if (t.get("lang") or t.get("language") or "").startswith("en")), tracks[0])
+                vtt_url = en.get("url") or en.get("src") or ""
+                if vtt_url.startswith("/"):
+                    vtt_url = "https://player.vimeo.com" + vtt_url
+                if vtt_url:
+                    vtt_req = urllib.request.Request(vtt_url, headers={"User-Agent": headers["User-Agent"]})
+                    with urllib.request.urlopen(vtt_req, timeout=10) as r2:
+                        vtt_text = r2.read().decode("utf-8", errors="replace")
+                    caps = _parse_vtt(vtt_text)
+                    if caps:
+                        print(f"✅ Vimeo subtítulos (player): {vid} ({len(caps)} segmentos)")
+                        return jsonify({"captions": caps})
+
+        # Buscar URL de VTT directamente
+        m2 = _re.search(r'"(https://[^"]+\.vtt[^"]*)"', html)
+        if m2:
+            vtt_url = m2.group(1).replace("\\u0026", "&")
+            vtt_req = urllib.request.Request(vtt_url, headers={"User-Agent": headers["User-Agent"]})
+            with urllib.request.urlopen(vtt_req, timeout=10) as r2:
+                vtt_text = r2.read().decode("utf-8", errors="replace")
+            caps = _parse_vtt(vtt_text)
+            if caps:
+                print(f"✅ Vimeo subtítulos (vtt directo): {vid} ({len(caps)} segmentos)")
+                return jsonify({"captions": caps})
+
+        print(f"⚠️  Vimeo: no se encontraron text_tracks en el player para {vid}")
+        return jsonify({"error": "no_captions"}), 404
+
+    except Exception as e:
+        print(f"⚠️  Vimeo error: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+def _parse_vtt(vtt):
+    import re
+    caps = []
+    blocks = re.split(r'\n{2,}', vtt.strip())
+    for block in blocks:
+        lines = block.strip().splitlines()
+        m = None
+        for line in lines:
+            m = re.match(r'(\d{2}:\d{2}:\d{2}[.,]\d{3})\s*-->\s*(\d{2}:\d{2}:\d{2}[.,]\d{3})', line)
+            if m:
+                break
+        if not m:
+            continue
+        def t2s(ts):
+            ts = ts.replace(',', '.')
+            h, mn, s = ts.split(':')
+            return int(h)*3600 + int(mn)*60 + float(s)
+        start, end = t2s(m.group(1)), t2s(m.group(2))
+        text_lines = [l for l in lines if '-->' not in l and not l.strip().isdigit() and l.strip()]
+        text = ' '.join(text_lines).strip()
+        if text:
+            caps.append({"start": round(start,3), "end": round(end,3),
+                         "dur": round(end-start,3), "text": text})
+    return caps
+
+
 @app.route("/transcript")
 def transcript():
     vid = request.args.get("v", "").strip()

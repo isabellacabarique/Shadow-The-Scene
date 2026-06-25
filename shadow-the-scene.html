@@ -411,9 +411,9 @@ function handleUrl(){
   const errEl=document.getElementById('url-error');
   errEl.style.display='none';
   if(!raw){setUrlErr('Por favor ingresa una URL.');return;}
-  const {platform,vid}=detect(raw);
+  const {platform,vid,hash}=detect(raw);
   if(!platform){setUrlErr('URL no reconocida. Usa youtube.com, youtu.be o vimeo.com.');return;}
-  S.url=raw;S.vid=vid;S.platform=platform;
+  S.url=raw;S.vid=vid;S.hash=hash||null;S.platform=platform;
   show('screen-level');
 }
 function setUrlErr(m){const e=document.getElementById('url-error');e.textContent=m;e.style.display='block';}
@@ -422,8 +422,8 @@ function detect(url){
   let m;
   m=url.match(/(?:youtube\.com\/(?:watch\?v=|shorts\/|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
   if(m) return{platform:'youtube',vid:m[1]};
-  m=url.match(/vimeo\.com\/(?:video\/)?(\d+)/);
-  if(m) return{platform:'vimeo',vid:m[1]};
+  m=url.match(/vimeo\.com\/(?:video\/)?(\d+)(?:\/([a-f0-9]+))?/);
+  if(m) return{platform:'vimeo',vid:m[1],hash:m[2]||null};
   return{platform:null,vid:null};
 }
 
@@ -450,7 +450,7 @@ async function loadAndPrepare(){
     setStatus('Detectando plataforma y buscando subtítulos…');
     let caps;
     if(S.platform==='youtube') caps=await getYTCaptions(S.vid);
-    else if(S.platform==='vimeo') caps=await getVimeoCaptions(S.vid);
+    else if(S.platform==='vimeo') caps=await getVimeoCaptions(S.vid,S.hash);
     if(!caps||caps.length===0){show('screen-manual');return;}
     finishLoad(caps);
   }catch(e){
@@ -584,21 +584,70 @@ function parseCaptionXml(xml){
   return caps.length>0?caps:null;
 }
 
-async function getVimeoCaptions(vid){
+async function getVimeoCaptions(vid,hash){
+  const hashParam=hash?`?h=${hash}`:'';
+  // Intento 0: servidor local (evita CORS)
   try{
     setStatus('Buscando subtítulos en Vimeo…');
+    const hq=hash?`&h=${hash}`:'';
+    const r=await fetch(`/vimeo-captions?v=${vid}${hq}`,{signal:AbortSignal.timeout(6000)});
+    if(r.ok){
+      const j=await r.json();
+      if(j.captions&&j.captions.length>2) return j.captions;
+    }
+  }catch(e){console.info('Vimeo server not available, trying direct…');}
+
+  const hashParamQ=hash?`?h=${hash}`:'';
+  // Intento 1: API de configuración del player (más fiable)
+  try{
+    const r=await fetch(`https://player.vimeo.com/video/${vid}/config${hashParamQ}`,{signal:AbortSignal.timeout(6000)});
+    if(r.ok){
+      const cfg=await r.json();
+      const tracks=cfg?.request?.text_tracks||[];
+      if(tracks.length>0){
+        const enT=tracks.find(t=>t.lang==='en'||t.lang?.startsWith('en'))||tracks[0];
+        let url=enT.url||enT.url_vtt||'';
+        if(url.startsWith('/')) url='https://player.vimeo.com'+url;
+        if(url){
+          const vtt=await fetch(url).then(r2=>r2.text());
+          const caps=parseVtt(vtt);
+          if(caps&&caps.length>2) return caps;
+        }
+      }
+    }
+  }catch(e){console.warn('vimeo config fail:',e.message);}
+
+  // Intento 2: Proxy de la página de Vimeo
+  try{
     const html=await proxyFetch(`https://vimeo.com/${vid}`);
-    const m=html.match(/window\.vimeo\.clip_page_config\s*=\s*(\{.+?\});\s*<\/script>/s);
-    if(m){
-      const cfg=JSON.parse(m[1]);
+    // Buscar text_tracks en el JSON incrustado
+    const m1=html.match(/"text_tracks"\s*:\s*(\[.+?\])/s);
+    if(m1){
+      const tracks=JSON.parse(m1[1]);
+      if(tracks.length>0){
+        const enT=tracks.find(t=>t.lang==='en'||t.language==='en')||tracks[0];
+        const url=enT.url||enT.src||'';
+        if(url){
+          const vtt=await proxyFetch(url.startsWith('http')?url:'https:'+url);
+          const caps=parseVtt(vtt);
+          if(caps&&caps.length>2) return caps;
+        }
+      }
+    }
+    // Fallback: formato antiguo
+    const m2=html.match(/window\.vimeo\.clip_page_config\s*=\s*(\{.+?\});\s*<\/script>/s);
+    if(m2){
+      const cfg=JSON.parse(m2[1]);
       const tracks=cfg?.clip?.text_tracks||[];
       if(tracks.length>0){
         const enT=tracks.find(t=>t.lang==='en')||tracks[0];
         const vtt=await proxyFetch(enT.url);
-        return parseVtt(vtt);
+        const caps=parseVtt(vtt);
+        if(caps&&caps.length>2) return caps;
       }
     }
-  }catch(e){console.warn('vimeo fail:',e.message);}
+  }catch(e){console.warn('vimeo page fail:',e.message);}
+
   return null;
 }
 
@@ -732,7 +781,8 @@ function initPlayer(){
     tryCreate();
   }else if(S.platform==='vimeo'){
     const f=document.createElement('iframe');
-    f.src=`https://player.vimeo.com/video/${S.vid}?api=1`;
+    const hParam=S.hash?`&h=${S.hash}`:'';
+    f.src=`https://player.vimeo.com/video/${S.vid}?api=1${hParam}`;
     f.style.cssText='width:100%;aspect-ratio:16/9;';
     f.frameBorder='0';f.allowFullscreen=true;
     document.getElementById('yt-player').replaceWith(f);
