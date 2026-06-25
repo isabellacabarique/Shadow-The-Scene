@@ -1,0 +1,1087 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shadow the Scene · Listening Lab</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://www.youtube.com/iframe_api"></script>
+<style>
+:root {
+  --bg:#1a2a4a; --card:#1e3564; --card2:#243d72;
+  --green:#4caf50; --orange:#ff9800; --purple:#9c27b0; --red:#e53935;
+  --blue:#4c8eff; --light:#b0c4de;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-height:100vh;overflow-x:hidden;}
+.screen{display:none;min-height:100vh;flex-direction:column;}
+.screen.active{display:flex;}
+
+/* ── SHARED ── */
+.btn-primary{padding:14px 28px;border-radius:12px;border:none;
+  background:linear-gradient(135deg,#4c8eff,#9c27b0);
+  color:#fff;font-size:1rem;font-weight:600;cursor:pointer;transition:transform .15s,opacity .15s;}
+.btn-primary:hover{transform:translateY(-2px);opacity:.9;}
+.center{display:flex;align-items:center;justify-content:center;flex:1;padding:20px;}
+.icon-btn{background:none;border:none;color:#fff;font-size:1.4rem;cursor:pointer;
+  padding:4px 8px;border-radius:8px;transition:background .15s;}
+.icon-btn:hover{background:rgba(255,255,255,.12);}
+
+/* ── URL SCREEN ── */
+.url-card{background:var(--card);border-radius:20px;padding:48px 40px;max-width:600px;
+  width:100%;box-shadow:0 20px 60px rgba(0,0,0,.4);text-align:center;}
+.logo{font-size:3rem;margin-bottom:10px;}
+.url-card h1{font-size:2rem;margin-bottom:8px;
+  background:linear-gradient(90deg,#64b5f6,#a78bfa);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.url-card>p{color:var(--light);margin-bottom:28px;font-size:.95rem;}
+.url-row{display:flex;gap:10px;margin-bottom:12px;}
+.url-input{flex:1;padding:14px 18px;border-radius:12px;border:2px solid rgba(255,255,255,.2);
+  background:rgba(255,255,255,.08);color:#fff;font-size:1rem;outline:none;transition:border-color .2s;}
+.url-input:focus{border-color:#64b5f6;}
+.url-input::placeholder{color:rgba(255,255,255,.35);}
+.badges{display:flex;gap:10px;justify-content:center;margin-top:16px;flex-wrap:wrap;}
+.badge{padding:5px 14px;border-radius:20px;font-size:.78rem;
+  background:rgba(255,255,255,.1);color:var(--light);}
+.url-error{color:#ef9a9a;font-size:.85rem;margin-top:8px;display:none;
+  padding:8px;background:rgba(229,57,53,.15);border-radius:8px;}
+
+/* ── LEVEL SCREEN ── */
+.level-header{text-align:center;padding:36px 20px 20px;font-size:1.9rem;font-weight:700;}
+.level-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;max-width:820px;width:100%;}
+.level-card{border-radius:16px;padding:30px 26px;cursor:pointer;
+  transition:transform .2s,box-shadow .2s;position:relative;overflow:hidden;min-height:140px;}
+.level-card:hover{transform:scale(1.03);box-shadow:0 12px 40px rgba(0,0,0,.5);}
+.level-card.bg-green {background:linear-gradient(135deg,#4caf50,#2e7d32);}
+.level-card.bg-orange{background:linear-gradient(135deg,#ff9800,#e65100);}
+.level-card.bg-purple{background:linear-gradient(135deg,#9c27b0,#4a148c);}
+.level-card.bg-red   {background:linear-gradient(135deg,#e53935,#b71c1c);}
+.level-card h3{font-size:1.9rem;font-weight:700;}
+.level-card p{margin-top:7px;opacity:.92;font-size:.93rem;line-height:1.4;}
+.level-card .licon{position:absolute;right:18px;bottom:8px;font-size:4.5rem;opacity:.18;user-select:none;}
+
+/* ── MODE SCREEN ── */
+.mode-header{text-align:center;padding:36px 20px 20px;font-size:1.9rem;font-weight:700;}
+.mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;max-width:700px;width:100%;}
+.mode-card{background:var(--card);border-radius:20px;padding:40px 28px;cursor:pointer;
+  text-align:center;border:2px solid transparent;transition:all .2s;}
+.mode-card:hover{border-color:#64b5f6;transform:scale(1.03);}
+.mode-card .micon{font-size:3rem;margin-bottom:14px;}
+.mode-card h3{font-size:1.5rem;margin-bottom:10px;}
+.mode-card p{color:var(--light);font-size:.9rem;line-height:1.5;}
+
+/* ── LOADING SCREEN ── */
+.loading-wrap{text-align:center;}
+.loading-wrap h2{font-size:1.7rem;margin-bottom:6px;}
+.spinner{width:60px;height:60px;border:4px solid rgba(255,255,255,.15);
+  border-top-color:#64b5f6;border-radius:50%;animation:spin 1s linear infinite;margin:28px auto;}
+@keyframes spin{to{transform:rotate(360deg);}}
+#loading-status{color:var(--light);font-size:.95rem;}
+
+/* ── MANUAL TRANSCRIPT SCREEN ── */
+.manual-card{background:var(--card);border-radius:20px;padding:36px 32px;
+  max-width:680px;width:100%;}
+.manual-card h2{font-size:1.6rem;margin-bottom:6px;}
+.manual-card>p{color:var(--light);margin-bottom:20px;font-size:.92rem;line-height:1.5;}
+.steps{background:rgba(0,0,0,.25);border-radius:12px;padding:18px 20px;
+  margin-bottom:20px;counter-reset:step;}
+.step{display:flex;align-items:flex-start;gap:12px;margin-bottom:12px;font-size:.9rem;line-height:1.5;}
+.step:last-child{margin-bottom:0;}
+.step-n{background:#4c8eff;color:#fff;border-radius:50%;width:24px;height:24px;
+  display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:700;flex-shrink:0;margin-top:1px;}
+.step-n.yt{background:#ff0000;}
+.transcript-area{width:100%;min-height:140px;padding:14px;border-radius:12px;
+  border:2px solid rgba(255,255,255,.2);background:rgba(255,255,255,.07);
+  color:#fff;font-size:.95rem;resize:vertical;outline:none;line-height:1.5;
+  font-family:'Segoe UI',sans-serif;transition:border-color .2s;}
+.transcript-area:focus{border-color:#64b5f6;}
+.transcript-area::placeholder{color:rgba(255,255,255,.3);}
+.manual-actions{display:flex;gap:12px;margin-top:14px;}
+.manual-actions button{flex:1;}
+.btn-secondary{padding:14px;border-radius:12px;border:1px solid rgba(255,255,255,.25);
+  background:transparent;color:#fff;font-size:.95rem;cursor:pointer;transition:background .15s;}
+.btn-secondary:hover{background:rgba(255,255,255,.1);}
+.manual-error{color:#ef9a9a;font-size:.85rem;margin-top:8px;display:none;
+  padding:8px;background:rgba(229,57,53,.15);border-radius:8px;text-align:center;}
+
+/* ── GAME SCREEN ── */
+#screen-game{padding:0;}
+.topbar{display:flex;align-items:center;gap:16px;padding:11px 18px;
+  background:rgba(0,0,0,.35);flex-wrap:wrap;}
+.sbox{display:flex;align-items:center;gap:8px;font-size:.88rem;}
+.slabel{color:var(--light);}
+.sval{background:var(--card2);padding:4px 12px;border-radius:6px;font-weight:700;
+  font-size:1rem;min-width:44px;text-align:center;}
+.sval.pts{background:#111d33;font-family:'Courier New',monospace;
+  font-size:1.35rem;letter-spacing:2px;color:#ffeb3b;min-width:80px;}
+.sval.cor{color:#66bb6a;}
+.sval.err{color:#ef5350;}
+.bonus-ring{width:42px;height:42px;border-radius:50%;border:3px solid #64b5f6;
+  display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem;}
+.spacer{flex:1;}
+.timer-track{height:6px;background:rgba(255,255,255,.1);}
+.timer-fill{height:100%;background:#ff4444;transition:width .1s linear;}
+.game-body{display:flex;flex:1;min-height:0;}
+.video-col{flex:2;background:#000;display:flex;align-items:center;justify-content:center;min-height:280px;}
+#yt-player{width:100%;aspect-ratio:16/9;}
+.answer-col{flex:1;min-width:270px;background:var(--card);
+  display:flex;flex-direction:column;gap:10px;padding:18px;justify-content:center;}
+.opt-btn{padding:17px 18px;border-radius:12px;border:none;background:var(--card2);
+  color:#fff;font-size:1.05rem;cursor:pointer;text-align:center;transition:all .15s;width:100%;}
+.opt-btn:hover:not(:disabled){background:#2d4d8a;transform:translateX(3px);}
+.opt-btn.ok {background:#2e7d32!important;}
+.opt-btn.bad{background:#b71c1c!important;}
+.opt-btn:disabled{cursor:default;}
+.type-input{width:100%;padding:14px;border-radius:12px;border:2px solid rgba(255,255,255,.25);
+  background:rgba(255,255,255,.08);color:#fff;font-size:1.15rem;outline:none;transition:border-color .2s;}
+.type-input:focus{border-color:#64b5f6;}
+.btn-confirm{padding:14px;border-radius:12px;border:none;background:#4c8eff;
+  color:#fff;font-size:1rem;font-weight:600;cursor:pointer;transition:opacity .15s;}
+.btn-confirm:hover{opacity:.88;}
+.btn-replay{display:flex;align-items:center;justify-content:center;gap:6px;
+  padding:9px;border-radius:10px;border:1px solid rgba(255,255,255,.25);
+  background:transparent;color:#fff;font-size:.88rem;cursor:pointer;transition:background .15s;}
+.btn-replay:hover{background:rgba(255,255,255,.1);}
+.fb{text-align:center;font-size:1rem;font-weight:600;padding:10px;border-radius:8px;display:none;}
+.fb.ok {background:rgba(76,175,80,.25);color:#a5d6a7;display:block;}
+.fb.bad{background:rgba(229,57,53,.25);color:#ef9a9a;display:block;}
+.sentence-bar{padding:18px 28px;background:rgba(0,0,0,.28);
+  font-family:'Montserrat',sans-serif;font-size:1.18rem;line-height:2.1;
+  min-height:120px;text-align:center;}
+.cap-line{padding:3px 0;}
+.cap-line.prev{color:rgba(255,255,255,.38);font-size:1rem;}
+.cap-line.current{color:#fff;font-size:1.22rem;font-weight:500;}
+.cap-line.next{color:rgba(255,255,255,.22);font-size:.95rem;}
+.blank{color:#64b5f6;font-weight:700;border-bottom:2px solid #64b5f6;padding:0 5px;}
+.filled-ok{color:#66bb6a;font-weight:700;border-bottom:2px solid #66bb6a;padding:0 4px;}
+.filled-wrong{color:#64b5f6;font-weight:700;border-bottom:2px solid #64b5f6;padding:0 4px;}
+.nav-bar{display:flex;align-items:center;justify-content:space-between;
+  padding:10px 18px;background:rgba(0,0,0,.2);}
+.nav-btn{padding:7px 18px;border-radius:8px;border:1px solid rgba(255,255,255,.25);
+  background:transparent;color:#fff;cursor:pointer;font-size:1.1rem;transition:background .15s;}
+.nav-btn:hover{background:rgba(255,255,255,.1);}
+#blank-prog{color:var(--light);font-size:.9rem;}
+
+/* ── SUMMARY SCREEN ── */
+.sum-card{background:var(--card);border-radius:20px;padding:40px;max-width:680px;width:100%;}
+.sum-card h2{font-size:2rem;text-align:center;margin-bottom:6px;}
+.grade-ring{width:120px;height:120px;border-radius:50%;border:6px solid #64b5f6;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  margin:18px auto;font-size:2.2rem;font-weight:700;color:#64b5f6;}
+.grade-ring small{font-size:.75rem;color:var(--light);font-weight:400;}
+.sgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:22px 0;}
+.scard{background:var(--card2);border-radius:12px;padding:14px;text-align:center;}
+.scard .n{font-size:1.9rem;font-weight:700;}
+.scard .l{font-size:.78rem;color:var(--light);margin-top:4px;}
+.scard.c .n{color:#66bb6a;} .scard.w .n{color:#ef5350;} .scard.b .n{color:#64b5f6;}
+.sum-btns{display:flex;gap:14px;margin-top:22px;}
+.sum-btns button{flex:1;padding:14px;border-radius:12px;border:none;
+  font-size:.95rem;font-weight:600;cursor:pointer;transition:opacity .15s;}
+.sum-btns button:hover{opacity:.85;}
+.btn-again{background:linear-gradient(135deg,#4c8eff,#9c27b0);color:#fff;}
+.btn-home {background:rgba(255,255,255,.1);color:#fff;}
+
+/* ── RESPONSIVE ── */
+@media(max-width:760px){
+  .level-grid,.mode-grid{grid-template-columns:1fr;}
+  .game-body{flex-direction:column;}
+  .answer-col{min-width:unset;}
+  .sgrid{grid-template-columns:1fr 1fr;}
+  .url-card,.manual-card{padding:28px 18px;}
+}
+</style>
+</head>
+<body>
+
+<!-- ══ SCREEN 1: URL ══ -->
+<div id="screen-url" class="screen active">
+  <div class="center">
+    <div class="url-card">
+      <div class="logo">🎧</div>
+      <h1>Shadow the Scene</h1>
+      <p>Listening Lab · Mejora tu inglés con videos reales</p>
+      <div class="url-row">
+        <input id="url-input" class="url-input" type="text"
+          placeholder="https://www.youtube.com/watch?v=…" />
+      </div>
+      <button class="btn-primary" style="width:100%" onclick="handleUrl()">▶ Comenzar Actividad</button>
+      <div id="url-error" class="url-error"></div>
+      <div class="badges">
+        <span class="badge">▶ YouTube</span>
+        <span class="badge">● Vimeo</span>
+        <span class="badge">✓ Subtítulos automáticos</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SCREEN 2: LEVEL ══ -->
+<div id="screen-level" class="screen">
+  <div class="level-header">Selecciona un Modo de Juego</div>
+  <div class="center" style="align-items:flex-start;padding-top:0;">
+    <div class="level-grid">
+      <div class="level-card bg-green"  onclick="pickLevel('beginner',10)">
+        <h3>Principiante</h3><p id="ld-b">Rellenar palabras al azar (10%)</p>
+        <div class="licon">😊</div>
+      </div>
+      <div class="level-card bg-orange" onclick="pickLevel('intermediate',25)">
+        <h3>Intermedio</h3><p id="ld-i">Rellenar palabras al azar (25%)</p>
+        <div class="licon">😐</div>
+      </div>
+      <div class="level-card bg-purple" onclick="pickLevel('advanced',50)">
+        <h3>Avanzado</h3><p id="ld-a">Rellenar palabras al azar (50%)</p>
+        <div class="licon">😤</div>
+      </div>
+      <div class="level-card bg-red"    onclick="pickLevel('expert',100)">
+        <h3>Experto</h3><p>Rellenar todas las palabras (100%) ¿Estás loco?</p>
+        <div class="licon">😵</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SCREEN 3: MODE ══ -->
+<div id="screen-mode" class="screen">
+  <div class="mode-header">Selecciona un Modo de Práctica</div>
+  <div class="center">
+    <div class="mode-grid">
+      <div class="mode-card" onclick="pickMode('typing')">
+        <div class="micon">⌨️</div>
+        <h3>Modo Escritura</h3>
+        <p>Escribe la palabra o frase que falta mientras escuchas el video</p>
+      </div>
+      <div class="mode-card" onclick="pickMode('selection')">
+        <div class="micon">☑️</div>
+        <h3>Modo Selección</h3>
+        <p>Elige la respuesta correcta entre las opciones presentadas</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SCREEN 4: LOADING ══ -->
+<div id="screen-loading" class="screen">
+  <div class="center">
+    <div class="loading-wrap">
+      <div style="font-size:3rem">🎯</div>
+      <h2 style="margin-top:16px">Preparando tu actividad…</h2>
+      <div class="spinner"></div>
+      <p id="loading-status">Buscando subtítulos del video…</p>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SCREEN 5: MANUAL TRANSCRIPT ══ -->
+<div id="screen-manual" class="screen">
+  <div class="center">
+    <div class="manual-card">
+      <h2>📋 Pegar Transcripción Manualmente</h2>
+      <p>Los navegadores no permiten descargar subtítulos directamente de YouTube por seguridad.
+         Puedes copiarlos tú mismo en menos de 30 segundos:</p>
+
+      <div style="background:rgba(76,175,80,.12);border:1px solid rgba(76,175,80,.3);border-radius:12px;padding:14px 16px;margin-bottom:16px;font-size:.88rem;line-height:1.6;">
+        <strong>💡 ¿Quieres que funcione automáticamente?</strong><br>
+        Ejecuta <code style="background:rgba(0,0,0,.3);padding:2px 6px;border-radius:4px;">transcript_server.py</code> junto a la aplicación y los subtítulos se cargarán solos.<br>
+        <span style="color:var(--light);">Solo necesitas hacerlo una vez en tu computador.</span>
+      </div>
+
+      <div class="steps">
+        <div class="step">
+          <div class="step-n yt">YT</div>
+          <div>Abre el video en <strong>YouTube</strong> en otra pestaña.</div>
+        </div>
+        <div class="step">
+          <div class="step-n">1</div>
+          <div>Debajo del video, haz clic en los <strong>tres puntos (···)</strong> y selecciona
+            <strong>"Mostrar transcripción"</strong> (Show transcript).</div>
+        </div>
+        <div class="step">
+          <div class="step-n">2</div>
+          <div>En el panel que aparece a la derecha, haz clic dentro y pulsa
+            <strong>Ctrl+A</strong> (o Cmd+A en Mac) para seleccionar todo.</div>
+        </div>
+        <div class="step">
+          <div class="step-n">3</div>
+          <div>Copia con <strong>Ctrl+C</strong> y pégalo en el cuadro de abajo.</div>
+        </div>
+      </div>
+
+      <textarea id="transcript-area" class="transcript-area"
+        placeholder="Pega la transcripción de YouTube aquí…&#10;&#10;Ejemplo:&#10;0:00&#10;Hello everyone and welcome&#10;0:04&#10;to today's lesson about…"></textarea>
+
+      <div id="manual-error" class="manual-error"></div>
+
+      <div class="manual-actions">
+        <button class="btn-secondary" onclick="goHome()">← Atrás</button>
+        <button class="btn-primary" onclick="submitManual()">Crear ejercicio →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SCREEN 6: GAME ══ -->
+<div id="screen-game" class="screen">
+  <div class="topbar">
+    <button class="icon-btn" onclick="togglePause()" id="pause-btn" title="Pausar">⏸</button>
+    <div class="sbox"><span class="slabel">Puntos</span><span class="sval pts" id="g-pts">00000</span></div>
+    <div class="sbox"><span class="slabel">Huecos</span><span class="sval" id="g-blanks">0/0</span></div>
+    <div class="sbox"><span class="slabel">Aciertos</span><span class="sval cor" id="g-cor">0</span></div>
+    <div class="sbox"><span class="slabel">Fallos</span><span class="sval err" id="g-err">0</span></div>
+    <div class="spacer"></div>
+    <div class="sbox"><span class="slabel">Bonus</span><div class="bonus-ring" id="g-bonus">x1</div></div>
+    <button class="icon-btn" onclick="showHelp()" title="Ayuda">?</button>
+  </div>
+  <div class="timer-track"><div class="timer-fill" id="timer-fill" style="width:100%"></div></div>
+  <div class="game-body">
+    <div class="video-col"><div id="yt-player"></div></div>
+    <!-- Selection -->
+    <div class="answer-col" id="sel-panel" style="display:none">
+      <div class="fb" id="fb-sel"></div>
+      <div id="opts"></div>
+      <button class="btn-replay" onclick="replaySeg()">🔁 Repetir audio</button>
+    </div>
+    <!-- Typing -->
+    <div class="answer-col" id="typ-panel" style="display:none">
+      <p style="color:var(--light);font-size:.88rem">Escribe la palabra o frase que falta:</p>
+      <input id="typ-in" class="type-input" placeholder="tu respuesta…"
+        onkeydown="if(event.key==='Enter')submitTyping()" />
+      <button class="btn-confirm" onclick="submitTyping()">Confirmar ✓</button>
+      <div class="fb" id="fb-typ"></div>
+      <button class="btn-replay" onclick="replaySeg()">🔁 Repetir audio</button>
+    </div>
+  </div>
+  <div class="sentence-bar" id="sentence-bar">…</div>
+  <div class="nav-bar">
+    <button class="nav-btn" onclick="prevBlank()">⟵</button>
+    <span id="blank-prog">1 / 1</span>
+    <button class="nav-btn" onclick="nextBlank()">⟶</button>
+  </div>
+</div>
+
+<!-- ══ SCREEN 7: SUMMARY ══ -->
+<div id="screen-summary" class="screen">
+  <div class="center">
+    <div class="sum-card">
+      <h2>🏆 Resultados Finales</h2>
+      <div class="grade-ring" id="grade-ring">
+        <span id="s-pct">0%</span><small>Precisión</small>
+      </div>
+      <div class="sgrid">
+        <div class="scard b"><div class="n" id="s-tot">0</div><div class="l">Huecos Totales</div></div>
+        <div class="scard c"><div class="n" id="s-cor">0</div><div class="l">Aciertos</div></div>
+        <div class="scard w"><div class="n" id="s-err">0</div><div class="l">Fallos</div></div>
+        <div class="scard b"><div class="n" id="s-pts">0</div><div class="l">Puntos</div></div>
+        <div class="scard b"><div class="n" id="s-comp">0%</div><div class="l">Completado</div></div>
+        <div class="scard b"><div class="n" id="s-ls">0/10</div><div class="l">Puntuación Listening</div></div>
+      </div>
+      <div class="sum-btns">
+        <button class="btn-again" onclick="restart()">🔄 Intentar de nuevo</button>
+        <button class="btn-home" onclick="goHome()">🏠 Nuevo Video</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const S={
+  url:'',vid:'',platform:'',
+  level:'',pct:10,mode:'selection',
+  captions:[],blanks:[],
+  idx:0,score:0,cor:0,err:0,
+  bonus:1,streak:0,
+  timeLeft:30,maxTime:30,
+  timerTick:null,answered:false,
+  player:null,paused:false,seg:null,
+  sentenceTimer:null,blankResults:[],
+};
+
+function show(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+document.getElementById('url-input').addEventListener('keydown',e=>{
+  if(e.key==='Enter') handleUrl();
+});
+
+function handleUrl(){
+  const raw=document.getElementById('url-input').value.trim();
+  const errEl=document.getElementById('url-error');
+  errEl.style.display='none';
+  if(!raw){setUrlErr('Por favor ingresa una URL.');return;}
+  const {platform,vid}=detect(raw);
+  if(!platform){setUrlErr('URL no reconocida. Usa youtube.com, youtu.be o vimeo.com.');return;}
+  S.url=raw;S.vid=vid;S.platform=platform;
+  show('screen-level');
+}
+function setUrlErr(m){const e=document.getElementById('url-error');e.textContent=m;e.style.display='block';}
+
+function detect(url){
+  let m;
+  m=url.match(/(?:youtube\.com\/(?:watch\?v=|shorts\/|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+  if(m) return{platform:'youtube',vid:m[1]};
+  m=url.match(/vimeo\.com\/(?:video\/)?(\d+)/);
+  if(m) return{platform:'vimeo',vid:m[1]};
+  return{platform:null,vid:null};
+}
+
+function pickLevel(lvl,pct){S.level=lvl;S.pct=pct;show('screen-mode');}
+
+function updateLevelDescs(total){
+  const set=(id,n,p)=>document.getElementById(id).textContent=
+    `Rellenar ${n} palabras al azar de ${total} (${p}%)`;
+  set('ld-b',Math.round(total*.10),10);
+  set('ld-i',Math.round(total*.25),25);
+  set('ld-a',Math.round(total*.50),50);
+}
+
+function pickMode(mode){
+  S.mode=mode;
+  show('screen-loading');
+  loadAndPrepare();
+}
+
+function setStatus(t){document.getElementById('loading-status').textContent=t;}
+
+async function loadAndPrepare(){
+  try{
+    setStatus('Detectando plataforma y buscando subtítulos…');
+    let caps;
+    if(S.platform==='youtube') caps=await getYTCaptions(S.vid);
+    else if(S.platform==='vimeo') caps=await getVimeoCaptions(S.vid);
+    if(!caps||caps.length===0){show('screen-manual');return;}
+    finishLoad(caps);
+  }catch(e){
+    console.error(e);
+    show('screen-manual');
+  }
+}
+
+function finishLoad(caps){
+  S.captions=caps;
+  const totalWords=caps.reduce((a,c)=>a+c.text.split(/\s+/).length,0);
+  updateLevelDescs(totalWords);
+  S.blanks=makeBlanks(caps,S.pct);
+  if(S.blanks.length===0){show('screen-manual');return;}
+  S.idx=0;S.score=0;S.cor=0;S.err=0;S.bonus=1;S.streak=0;S.answered=false;S.paused=false;
+  S.blankResults=new Array(S.blanks.length).fill(null);
+  show('screen-game');
+  initPlayer();
+}
+
+async function proxyFetch(url){
+  const proxies=[
+    async u=>{const r=await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(u)}`);const j=await r.json();return j.contents;},
+    async u=>{const r=await fetch(`https://corsproxy.io/?${encodeURIComponent(u)}`);return r.text();},
+    async u=>{const r=await fetch(`https://thingproxy.freeboard.io/fetch/${encodeURIComponent(u)}`);return r.text();},
+  ];
+  for(const p of proxies){
+    try{
+      const text=await Promise.race([p(url),new Promise((_,rj)=>setTimeout(()=>rj(new Error('timeout')),8000))]);
+      if(text&&text.length>100) return text;
+    }catch(e){console.warn('proxy fail:',e.message);}
+  }
+  throw new Error('Todos los proxies fallaron');
+}
+
+async function getYTCaptions(vid){
+  // 0. Local server (transcript_server.py) — most reliable
+  try{
+    setStatus('Conectando con el servidor local…');
+    const r=await fetch(`/transcript?v=${vid}`,{signal:AbortSignal.timeout(4000)});
+    if(r.ok){
+      const j=await r.json();
+      if(j.captions&&j.captions.length>3) return j.captions;
+      if(j.error==='subtitles_disabled'||j.error==='video_unavailable') return null;
+    }
+  }catch(e){console.info('Local server not available, trying browser fallbacks…');}
+
+  // 1. Direct API
+  for(const lang of['en','en-US','en-GB']){
+    try{
+      setStatus(`Buscando subtítulos (${lang})…`);
+      const url=`https://www.youtube.com/api/timedtext?v=${vid}&lang=${lang}&fmt=json3`;
+      const r=await fetch(url,{signal:AbortSignal.timeout(5000)});
+      if(r.ok){const j=await r.json();const c=parseJson3(j);if(c&&c.length>3)return c;}
+    }catch(e){}
+  }
+
+  // 2. Auto-generated
+  for(const params of[`lang=en&kind=asr`,`lang=en-US&kind=asr`,`lang=en&tlang=en`]){
+    try{
+      const url=`https://www.youtube.com/api/timedtext?v=${vid}&${params}&fmt=json3`;
+      const r=await fetch(url,{signal:AbortSignal.timeout(5000)});
+      if(r.ok){const j=await r.json();const c=parseJson3(j);if(c&&c.length>3)return c;}
+    }catch(e){}
+  }
+
+  // 3. Page proxy
+  try{
+    setStatus('Intentando acceso indirecto…');
+    const html=await proxyFetch(`https://www.youtube.com/watch?v=${vid}`);
+    const tracks=extractTracks(html);
+    if(tracks&&tracks.length>0){
+      const enT=tracks.find(t=>t.languageCode?.startsWith('en'))||tracks.find(t=>t.vssId?.includes('en'))||tracks[0];
+      let captionUrl=enT.baseUrl||'';
+      if(captionUrl.startsWith('//')) captionUrl='https:'+captionUrl;
+      if(captionUrl&&!captionUrl.startsWith('http')) captionUrl='https://www.youtube.com'+captionUrl;
+      if(captionUrl){
+        setStatus('Descargando subtítulos…');
+        const xmlText=await proxyFetch(captionUrl);
+        const caps=parseCaptionXml(xmlText);
+        if(caps&&caps.length>3) return caps;
+      }
+    }
+  }catch(e){console.warn('proxy page fail:',e.message);}
+
+  return null;
+}
+
+function extractTracks(html){
+  const key='"captionTracks":';
+  const si=html.indexOf(key);
+  if(si===-1) return null;
+  let i=si+key.length;
+  while(i<html.length&&html[i]!=='[') i++;
+  if(i>=html.length) return null;
+  let depth=0,j=i;
+  while(j<html.length){
+    const c=html[j];
+    if(c==='['||c==='{') depth++;
+    else if(c===']'||c==='}'){depth--;if(depth===0)break;}
+    j++;
+  }
+  try{
+    const raw=html.substring(i,j+1).replace(/\\u([\dA-F]{4})/gi,(_,p)=>String.fromCharCode(parseInt(p,16)));
+    return JSON.parse(raw);
+  }catch(e){return null;}
+}
+
+function parseJson3(j){
+  if(!j||!j.events) return null;
+  const caps=[];
+  for(const ev of j.events){
+    if(!ev.segs) continue;
+    const text=ev.segs.map(s=>s.utf8||'').join('').replace(/\n/g,' ').trim();
+    if(text&&text!=='\n')
+      caps.push({start:(ev.tStartMs||0)/1000,end:((ev.tStartMs||0)+(ev.dDurationMs||2000))/1000,dur:(ev.dDurationMs||2000)/1000,text:htmlDecode(text)});
+  }
+  return caps.length>0?caps:null;
+}
+
+function parseCaptionXml(xml){
+  const doc=new DOMParser().parseFromString(xml,'text/xml');
+  const els=doc.querySelectorAll('text');
+  const caps=[];
+  els.forEach(el=>{
+    const start=parseFloat(el.getAttribute('start')||'0');
+    const dur=parseFloat(el.getAttribute('dur')||'2');
+    const text=htmlDecode((el.textContent||'').replace(/\n/g,' ').trim());
+    if(text) caps.push({start,end:start+dur,dur,text});
+  });
+  return caps.length>0?caps:null;
+}
+
+async function getVimeoCaptions(vid){
+  try{
+    setStatus('Buscando subtítulos en Vimeo…');
+    const html=await proxyFetch(`https://vimeo.com/${vid}`);
+    const m=html.match(/window\.vimeo\.clip_page_config\s*=\s*(\{.+?\});\s*<\/script>/s);
+    if(m){
+      const cfg=JSON.parse(m[1]);
+      const tracks=cfg?.clip?.text_tracks||[];
+      if(tracks.length>0){
+        const enT=tracks.find(t=>t.lang==='en')||tracks[0];
+        const vtt=await proxyFetch(enT.url);
+        return parseVtt(vtt);
+      }
+    }
+  }catch(e){console.warn('vimeo fail:',e.message);}
+  return null;
+}
+
+function parseVtt(vtt){
+  const caps=[];const lines=vtt.split('\n');let i=0;
+  while(i<lines.length){
+    const l=lines[i].trim();
+    const tm=l.match(/(\d{1,2}:\d{2}:\d{2}[.,]\d{3})\s*-->\s*(\d{1,2}:\d{2}:\d{2}[.,]\d{3})/);
+    if(tm){
+      const start=vttTime(tm[1]),end=vttTime(tm[2]);i++;
+      const tx=[];
+      while(i<lines.length&&lines[i].trim()!==''){tx.push(lines[i].trim().replace(/<[^>]+>/g,''));i++;}
+      const text=tx.join(' ').trim();
+      if(text) caps.push({start,end,dur:end-start,text});
+    }else i++;
+  }
+  return caps.length>0?caps:null;
+}
+function vttTime(s){const p=s.replace(',','.').split(':');return+p[0]*3600+ +p[1]*60+ +p[2];}
+
+function submitManual(){
+  const raw=document.getElementById('transcript-area').value.trim();
+  const errEl=document.getElementById('manual-error');
+  errEl.style.display='none';
+  if(!raw){errEl.textContent='Por favor pega la transcripción primero.';errEl.style.display='block';return;}
+  const caps=parseManualTranscript(raw);
+  if(!caps||caps.length<2){
+    errEl.textContent='No se pudo leer la transcripción. Asegúrate de copiar el texto completo desde YouTube.';
+    errEl.style.display='block';return;
+  }
+  finishLoad(caps);
+}
+
+function parseManualTranscript(raw){
+  const lines=raw.split('\n').map(l=>l.trim()).filter(l=>l);
+  const timeRe=/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/;
+  const hasTimestamps=lines.some(l=>timeRe.test(l));
+  if(hasTimestamps){
+    const caps=[];let curTime=null,textBuf=[];
+    for(const line of lines){
+      const m=line.match(timeRe);
+      if(m){
+        if(curTime!==null&&textBuf.length>0){caps.push({start:curTime,text:textBuf.join(' ')});textBuf=[];}
+        const h=m[3]?parseInt(m[1]):0;
+        const min=m[3]?parseInt(m[2]):parseInt(m[1]);
+        const sec=m[3]?parseInt(m[3]):parseInt(m[2]);
+        curTime=h*3600+min*60+sec;
+      }else if(curTime!==null){
+        if(!line.match(/^\[.+\]$/)) textBuf.push(line);
+      }
+    }
+    if(curTime!==null&&textBuf.length>0) caps.push({start:curTime,text:textBuf.join(' ')});
+    for(let i=0;i<caps.length;i++){caps[i].end=i+1<caps.length?caps[i+1].start:caps[i].start+5;caps[i].dur=caps[i].end-caps[i].start;}
+    if(caps.length>2) return caps;
+  }
+  if(raw.includes('-->')){const c=parseVtt(raw);if(c&&c.length>2)return c;}
+  const words=raw.split(/\s+/).filter(w=>w.replace(/[^a-zA-Z]/g,'').length>0);
+  if(words.length<5) return null;
+  const CHUNK=10,caps=[];
+  for(let i=0;i<words.length;i+=CHUNK){
+    const t=i*0.6;
+    caps.push({start:t,end:t+CHUNK*0.6,dur:CHUNK*0.6,text:words.slice(i,i+CHUNK).join(' ')});
+  }
+  return caps.length>1?caps:null;
+}
+
+const CONTRACTIONS=/\b(I'm|you're|he's|she's|it's|we're|they're|I've|you've|we've|they've|I'll|you'll|he'll|she'll|it'll|we'll|they'll|I'd|you'd|he'd|she'd|we'd|they'd|isn't|aren't|wasn't|weren't|don't|doesn't|didn't|won't|wouldn't|can't|couldn't|shouldn't|mustn't|haven't|hasn't|hadn't|that's|what's|there's|here's|who's|how's|gonna|wanna|gotta|kinda|sorta|lemme|gimme|y'all|could've|would've|should've|might've|must've)\b/gi;
+const PHRASAL=['look up','give up','put on','take off','come on','go on','find out','turn on','turn off','pick up','set up','show up','come back','go back','get up','sit down','stand up','move on','carry on','go ahead','run out','work out','figure out','bring up','keep up','make up','end up','grow up','break down','slow down','calm down','break up','catch up','get over','get through','look after','put away','throw away','get together','get along','watch out','hold on','hang on'];
+const EXPRESSIONS=['you know','kind of','sort of','a lot of','of course','right now','at least','at all','after all','in fact','as well','for sure','I mean','you see','by the way','to be honest','to be fair','hold on','come on','what about','how about','no way','all right','that\'s right','all of a sudden','more or less','in other words','first of all','above all','at the end of the day'];
+
+function wordWeight(word,cap){
+  const lo=word.toLowerCase(),cl=cap.text.toLowerCase();
+  let w=1;
+  CONTRACTIONS.lastIndex=0;
+  if(CONTRACTIONS.test(word)){CONTRACTIONS.lastIndex=0;w=Math.max(w,10);}
+  for(const pv of PHRASAL){if(cl.includes(pv)&&pv.split(' ').some(p=>p===lo))w=Math.max(w,9);}
+  for(const ex of EXPRESSIONS){if(cl.includes(ex)&&ex.includes(lo))w=Math.max(w,8);}
+  if(word.length>=5&&w===1)w=2;
+  if(word.length>=8&&w===2)w=3;
+  return w;
+}
+
+function makeBlanks(caps,pct){
+  const candidates=[];
+  for(const cap of caps){
+    const words=cap.text.match(/\b[a-zA-Z']{2,}\b/g)||[];
+    for(const w of words) candidates.push({cap,word:w,wt:wordWeight(w,cap)});
+  }
+  candidates.sort((a,b)=>b.wt!==a.wt?b.wt-a.wt:Math.random()-.5);
+  const target=Math.max(5,Math.round(candidates.length*pct/100));
+  const chosen=[],capCount=new Map();
+  for(const c of candidates){
+    if(chosen.length>=target) break;
+    const used=capCount.get(c.cap)||0;
+    const max=Math.ceil(c.cap.text.split(/\s+/).length/4);
+    if(used<max){chosen.push(c);capCount.set(c.cap,used+1);}
+  }
+  chosen.sort((a,b)=>a.cap.start-b.cap.start);
+  return chosen;
+}
+
+function distractors(correct,allCaps){
+  const pool=new Set();
+  for(const c of allCaps){
+    (c.text.match(/\b[a-zA-Z']{2,}\b/g)||[]).forEach(w=>{if(w.toLowerCase()!==correct.toLowerCase())pool.add(w);});
+  }
+  return [...pool].sort(()=>Math.random()-.5).slice(0,3)
+    .concat(['the','a','is','was','not','just','very','so','but','can','will'])
+    .filter((w,i,arr)=>arr.indexOf(w)===i&&w.toLowerCase()!==correct.toLowerCase())
+    .slice(0,3);
+}
+
+window.onYouTubeIframeAPIReady=()=>{S._ytReady=true;};
+
+function initPlayer(){
+  try{if(S.player)S.player.destroy();}catch(e){}
+  document.querySelector('.video-col').innerHTML='<div id="yt-player"></div>';
+  if(S.platform==='youtube'){
+    const tryCreate=()=>{
+      if(typeof YT==='undefined'||!YT.Player){setTimeout(tryCreate,400);return;}
+      S.player=new YT.Player('yt-player',{
+        videoId:S.vid,
+        playerVars:{playsinline:1,rel:0,modestbranding:1},
+        events:{onReady(){showBlank(0);}},
+      });
+    };
+    tryCreate();
+  }else if(S.platform==='vimeo'){
+    const f=document.createElement('iframe');
+    f.src=`https://player.vimeo.com/video/${S.vid}?api=1`;
+    f.style.cssText='width:100%;aspect-ratio:16/9;';
+    f.frameBorder='0';f.allowFullscreen=true;
+    document.getElementById('yt-player').replaceWith(f);
+    setTimeout(()=>showBlank(0),1000);
+  }else{showBlank(0);}
+}
+
+function seekPlay(t){
+  try{if(!S.player||!S.player.seekTo)return;S.player.seekTo(Math.max(0,t-1.5),true);S.player.playVideo();}catch(e){}
+}
+function pausePlay(){try{if(S.player?.pauseVideo)S.player.pauseVideo();}catch(e){}}
+function clearSentenceTimer(){if(S.sentenceTimer){clearTimeout(S.sentenceTimer);S.sentenceTimer=null;}}
+function scheduleSentencePause(cap,onDone){
+  clearSentenceTimer();
+  const dur=Math.max(1500,(cap.end-cap.start)*1000+600);
+  S.sentenceTimer=setTimeout(()=>{pausePlay();S.sentenceTimer=null;if(onDone)onDone();},dur);
+}
+function replaySeg(){
+  if(!S.seg)return;
+  seekPlay(S.seg.cap.start);
+  scheduleSentencePause(S.seg.cap);
+}
+
+// Returns all blank indices that share the same caption as blanks[idx]
+function sentenceGroup(idx){
+  const cap=S.blanks[idx].cap;
+  return S.blanks.map((_,i)=>i).filter(i=>S.blanks[i].cap===cap);
+}
+
+function showBlank(idx){
+  if(idx<0||idx>=S.blanks.length) return;
+  // Normalize to the first blank in this sentence
+  const cap=S.blanks[idx].cap;
+  while(idx>0&&S.blanks[idx-1].cap===cap) idx--;
+
+  const prevCap=S.seg?S.seg.cap:null;
+  S.idx=idx; S.answered=false; S.seg=S.blanks[idx];
+  const group=sentenceGroup(idx);
+  const last=group[group.length-1];
+
+  buildSentenceBar(idx);
+  refreshStats();
+  const prog=group.length>1?`${idx+1}-${last+1} / ${S.blanks.length}`:`${idx+1} / ${S.blanks.length}`;
+  document.getElementById('blank-prog').textContent=prog;
+  document.getElementById('g-blanks').textContent=prog.replace(' ','');
+  clearFb();
+
+  if(S.mode==='selection') setupSelGroup(group);
+  else setupTypGroup(group);
+
+  const isNewSentence=cap!==prevCap;
+  if(!S.paused&&isNewSentence){seekPlay(cap.start);scheduleSentencePause(cap);}
+  startTimer();
+}
+
+function setupTypGroup(group){
+  document.getElementById('sel-panel').style.display='none';
+  const panel=document.getElementById('typ-panel');
+  panel.style.display='flex'; panel.innerHTML='';
+
+  const intro=document.createElement('p');
+  intro.style.cssText='color:var(--light);font-size:.88rem';
+  intro.textContent=group.length===1?'Escribe la palabra que falta:':`Escribe las ${group.length} palabras que faltan:`;
+  panel.appendChild(intro);
+
+  group.forEach((blankIdx,i)=>{
+    const wrap=document.createElement('div');
+    wrap.style.cssText='display:flex;align-items:center;gap:8px';
+    if(group.length>1){
+      const lbl=document.createElement('span');
+      lbl.style.cssText='color:#64b5f6;font-size:.82rem;min-width:22px;font-weight:700';
+      lbl.textContent=`${i+1}.`;
+      wrap.appendChild(lbl);
+    }
+    const inp=document.createElement('input');
+    inp.id=`typ-in-${i}`; inp.className='type-input'; inp.style.flex='1';
+    inp.placeholder=group.length===1?'tu respuesta…':`palabra ${i+1}…`;
+    inp.addEventListener('keydown',e=>{
+      if(e.key==='Enter'){
+        if(i<group.length-1) document.getElementById(`typ-in-${i+1}`)?.focus();
+        else submitTypGroup(group);
+      }
+    });
+    wrap.appendChild(inp);
+    panel.appendChild(wrap);
+  });
+
+  const btn=document.createElement('button');
+  btn.className='btn-confirm'; btn.textContent='Confirmar ✓';
+  btn.onclick=()=>submitTypGroup(group);
+  panel.appendChild(btn);
+
+  const fb=document.createElement('div');
+  fb.className='fb'; fb.id='fb-typ';
+  panel.appendChild(fb);
+
+  const replay=document.createElement('button');
+  replay.className='btn-replay'; replay.innerHTML='🔁 Repetir audio';
+  replay.onclick=replaySeg;
+  panel.appendChild(replay);
+
+  setTimeout(()=>document.getElementById('typ-in-0')?.focus(),80);
+}
+
+function submitTypGroup(group){
+  if(S.answered) return;
+  const results=group.map((blankIdx,i)=>{
+    const given=(document.getElementById(`typ-in-${i}`)?.value||'').trim();
+    const correct=S.blanks[blankIdx].word;
+    return{blankIdx,given,correct,ok:norm(given)===norm(correct)};
+  });
+  if(results.some(r=>!r.given)) return;
+  S.answered=true; clearTimer();
+  applyGroupResult(results,'fb-typ');
+}
+
+function setupSelGroup(group){
+  document.getElementById('typ-panel').style.display='none';
+  const panel=document.getElementById('sel-panel');
+  panel.style.display='flex'; panel.innerHTML='';
+  S._selAnswers=new Array(group.length).fill(null);
+
+  group.forEach((blankIdx,i)=>{
+    const b=S.blanks[blankIdx];
+    const opts=[b.word,...distractors(b.word,S.captions)].sort(()=>Math.random()-.5);
+    if(group.length>1){
+      const lbl=document.createElement('p');
+      lbl.style.cssText=`color:var(--light);font-size:.82rem;margin-bottom:2px;margin-top:${i>0?'8px':'0'}`;
+      lbl.textContent=`${i+1}. Selecciona:`;
+      panel.appendChild(lbl);
+    }
+    const wrap=document.createElement('div');
+    wrap.id=`opts-group-${i}`;
+    wrap.style.cssText=`display:flex;flex-direction:column;gap:${group.length>1?'4':'6'}px`;
+    opts.forEach(o=>{
+      const btn=document.createElement('button');
+      btn.className='opt-btn';
+      if(group.length>1) btn.style.padding='10px 14px';
+      btn.textContent=o;
+      btn.onclick=()=>{
+        if(S.answered) return;
+        wrap.querySelectorAll('.opt-btn').forEach(x=>{x.style.background='';delete x.dataset.selected;});
+        btn.style.background='#2d4d8a'; btn.dataset.selected='true';
+        S._selAnswers[i]={given:o,correct:b.word,blankIdx};
+        if(S._selAnswers.every(a=>a!==null)) setTimeout(()=>submitSelGroup(group),300);
+      };
+      wrap.appendChild(btn);
+    });
+    panel.appendChild(wrap);
+  });
+
+  const fb=document.createElement('div');
+  fb.className='fb'; fb.id='fb-sel';
+  panel.appendChild(fb);
+
+  const replay=document.createElement('button');
+  replay.className='btn-replay'; replay.innerHTML='🔁 Repetir audio';
+  replay.onclick=replaySeg;
+  panel.appendChild(replay);
+}
+
+function submitSelGroup(group){
+  if(S.answered) return;
+  S.answered=true; clearTimer();
+  const results=S._selAnswers.map((a,i)=>{
+    if(!a){const bi=group[i];return{blankIdx:bi,given:'',correct:S.blanks[bi].word,ok:false};}
+    return{...a,ok:norm(a.given)===norm(a.correct)};
+  });
+  group.forEach((blankIdx,i)=>{
+    const wrap=document.getElementById(`opts-group-${i}`);
+    if(!wrap) return;
+    const correct=S.blanks[blankIdx].word;
+    wrap.querySelectorAll('.opt-btn').forEach(btn=>{
+      btn.disabled=true; btn.style.opacity='.65';
+      if(norm(btn.textContent)===norm(correct)){btn.classList.add('ok');btn.style.opacity='1';}
+      else if(btn.dataset.selected==='true') btn.classList.add('bad');
+    });
+  });
+  applyGroupResult(results,'fb-sel');
+}
+
+function applyGroupResult(results,fbId){
+  const tb=Math.round((S.timeLeft/S.maxTime)*50);
+  let totalPts=0;
+  results.forEach(r=>{
+    S.blankResults[r.blankIdx]={ok:r.ok,correct:r.correct,given:r.given};
+    if(r.ok){
+      const pts=(50+tb)*S.bonus; totalPts+=pts; S.score+=pts; S.cor++; S.streak++;
+      S.bonus=Math.min(4,1+Math.floor(S.streak/3));
+    }else{S.err++;S.streak=0;S.bonus=1;}
+  });
+  S.idx=results[results.length-1].blankIdx;
+  buildSentenceBar(results[0].blankIdx);
+  const allOk=results.every(r=>r.ok);
+  if(allOk){
+    setFb(fbId,true,`¡Correcto! +${totalPts} pts`);
+  }else{
+    const wrong=results.filter(r=>!r.ok).map(r=>`"${r.correct}"`).join(', ');
+    setFb(fbId,false,results.some(r=>r.ok)?`Casi. Era: ${wrong}`:`Incorrecto. Era: ${wrong}`);
+  }
+  refreshStats();
+  const nextIdx=results[results.length-1].blankIdx+1;
+  setTimeout(()=>nextIdx<S.blanks.length?showBlank(nextIdx):endGame(),1400);
+}
+
+function setFb(id,ok,msg){const el=document.getElementById(id);el.className='fb '+(ok?'ok':'bad');el.textContent=msg;}
+function clearFb(){['fb-sel','fb-typ'].forEach(id=>{const el=document.getElementById(id);if(el){el.className='fb';el.textContent='';}});}
+function norm(s){return s.toLowerCase().replace(/[^a-z']/g,'');}
+function escHtml(t){return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+function buildSentenceBar(activeIdx){
+  const currentCap=S.blanks[activeIdx].cap;
+  const capIdx=S.captions.indexOf(currentCap);
+  let html='';
+  for(let i=Math.max(0,capIdx-2);i<capIdx;i++){
+    html+=`<div class="cap-line prev">${renderCap(S.captions[i],activeIdx,false)}</div>`;
+  }
+  html+=`<div class="cap-line current">${renderCap(currentCap,activeIdx,true)}</div>`;
+  if(capIdx+1<S.captions.length){
+    html+=`<div class="cap-line next">${escHtml(S.captions[capIdx+1].text)}</div>`;
+  }
+  document.getElementById('sentence-bar').innerHTML=html;
+}
+
+function renderCap(cap,activeIdx,isCurrent){
+  const segs=[];
+  S.blanks.forEach((b,i)=>{
+    if(b.cap!==cap) return;
+    const ci=cap.text.toLowerCase().indexOf(b.word.toLowerCase());
+    if(ci!==-1) segs.push({start:ci,end:ci+b.word.length,word:b.word,result:S.blankResults[i],isActive:isCurrent});
+  });
+  if(segs.length===0) return escHtml(cap.text);
+  segs.sort((a,b)=>a.start-b.start);
+  let html='',pos=0;
+  for(const seg of segs){
+    html+=escHtml(cap.text.slice(pos,seg.start));
+    if(seg.result){
+      if(seg.result.ok){
+        html+=`<span class="filled-ok">${seg.word}</span>`;
+      }else{
+        html+=`<span class="filled-wrong">${seg.result.correct}</span>`;
+      }
+    }else if(seg.isActive){
+      html+=`<span class="blank">${'_'.repeat(Math.max(4,seg.word.length))}</span>`;
+    }else{
+      html+=`<span class="blank" style="opacity:.45">${'_'.repeat(Math.max(4,seg.word.length))}</span>`;
+    }
+    pos=seg.end;
+  }
+  html+=escHtml(cap.text.slice(pos));
+  return html;
+}
+
+function refreshStats(){
+  document.getElementById('g-pts').textContent=String(S.score).padStart(5,'0');
+  document.getElementById('g-cor').textContent=S.cor;
+  document.getElementById('g-err').textContent=S.err;
+  document.getElementById('g-bonus').textContent=`x${S.bonus}`;
+}
+
+function startTimer(){
+  clearTimer();S.timeLeft=S.maxTime;updTimer();
+  S.timerTick=setInterval(()=>{S.timeLeft-=.1;updTimer();if(S.timeLeft<=0){clearTimer();timeUp();}},100);
+}
+function clearTimer(){if(S.timerTick){clearInterval(S.timerTick);S.timerTick=null;}}
+function updTimer(){
+  const p=Math.max(0,(S.timeLeft/S.maxTime)*100);
+  const bar=document.getElementById('timer-fill');
+  bar.style.width=p+'%';
+  bar.style.background=p<25?'#ff1744':p<50?'#ff9800':'#ff4444';
+}
+function timeUp(){
+  if(S.answered) return;
+  S.answered=true;
+  const group=sentenceGroup(S.idx);
+  group.forEach(bi=>{if(!S.blankResults[bi])S.blankResults[bi]={ok:false,correct:S.blanks[bi].word,given:''};});
+  S.err+=group.length; S.streak=0; S.bonus=1;
+  buildSentenceBar(S.idx);
+  const words=group.map(bi=>`"${S.blanks[bi].word}"`).join(', ');
+  if(S.mode==='selection'){
+    group.forEach((_,i)=>{
+      const wrap=document.getElementById(`opts-group-${i}`);
+      if(!wrap) return;
+      const correct=S.blanks[group[i]].word;
+      wrap.querySelectorAll('.opt-btn').forEach(btn=>{
+        btn.disabled=true;
+        if(norm(btn.textContent)===norm(correct)){btn.classList.add('ok');btn.style.opacity='1';}
+        else btn.style.opacity='.5';
+      });
+    });
+    setFb('fb-sel',false,`¡Tiempo! Era: ${words}`);
+  }else{setFb('fb-typ',false,`¡Tiempo! Era: ${words}`);}
+  refreshStats();
+  const nextIdx=group[group.length-1]+1;
+  setTimeout(()=>nextIdx<S.blanks.length?showBlank(nextIdx):endGame(),1400);
+}
+
+function prevBlank(){
+  clearTimer();
+  if(S.idx>0){
+    let prev=S.idx-1;
+    const prevCap=S.blanks[prev].cap;
+    while(prev>0&&S.blanks[prev-1].cap===prevCap) prev--;
+    showBlank(prev);
+  }
+}
+function nextBlank(){
+  clearTimer();
+  const group=sentenceGroup(S.idx);
+  const nextIdx=group[group.length-1]+1;
+  nextIdx<S.blanks.length?showBlank(nextIdx):endGame();
+}
+function togglePause(){
+  S.paused=!S.paused;
+  document.getElementById('pause-btn').textContent=S.paused?'▶':'⏸';
+  if(S.paused){clearTimer();clearSentenceTimer();pausePlay();}
+  else{startTimer();if(S.seg){seekPlay(S.seg.cap.start);scheduleSentencePause(S.seg.cap);}}
+}
+function showHelp(){
+  alert('💡 Instrucciones\n\n• Escucha la oración y completa las palabras que faltan.\n• El audio se pausa al terminar cada oración — responde antes de continuar.\n• Tienes 30 segundos por pregunta.\n• Las respuestas más rápidas dan más puntos.\n• Usa 🔁 para repetir el audio de la oración.\n• Acumula rachas para multiplicar tu puntaje.\n\n¡Buena suerte!');
+}
+
+function endGame(){
+  clearTimer();pausePlay();
+  const total=S.blanks.length,done=S.cor+S.err;
+  const acc=total>0?Math.round((S.cor/total)*100):0;
+  const comp=total>0?Math.round((done/total)*100):0;
+  document.getElementById('s-pct').textContent=acc+'%';
+  document.getElementById('s-tot').textContent=total;
+  document.getElementById('s-cor').textContent=S.cor;
+  document.getElementById('s-err').textContent=S.err;
+  document.getElementById('s-pts').textContent=S.score;
+  document.getElementById('s-comp').textContent=comp+'%';
+  document.getElementById('s-ls').textContent=(acc/10).toFixed(1)+'/10';
+  document.getElementById('grade-ring').style.borderColor=acc>=80?'#4caf50':acc>=60?'#ff9800':'#e53935';
+  show('screen-summary');
+}
+
+function restart(){
+  S.idx=0;S.score=0;S.cor=0;S.err=0;S.bonus=1;S.streak=0;S.answered=false;S.paused=false;
+  S.blanks=makeBlanks(S.captions,S.pct);
+  S.blankResults=new Array(S.blanks.length).fill(null);
+  show('screen-game');initPlayer();
+}
+
+function goHome(){
+  clearTimer();
+  S.captions=[];S.blanks=[];
+  document.getElementById('url-input').value='';
+  document.getElementById('url-error').style.display='none';
+  document.getElementById('transcript-area').value='';
+  show('screen-url');
+}
+
+function htmlDecode(s){const d=document.createElement('div');d.innerHTML=s;return d.textContent||d.innerText||s;}
+</script>
+</body>
+</html>
