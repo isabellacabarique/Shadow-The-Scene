@@ -211,6 +211,7 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-heigh
         <span class="badge">● Vimeo</span>
         <span class="badge">✓ Subtítulos automáticos</span>
       </div>
+      <p style="margin-top:18px;font-size:.75rem;color:rgba(255,255,255,.35);letter-spacing:.08em;">by Immersa Academy</p>
     </div>
   </div>
 </div>
@@ -322,6 +323,7 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-heigh
 <!-- ══ SCREEN 6: GAME ══ -->
 <div id="screen-game" class="screen">
   <div class="topbar">
+    <button class="icon-btn" onclick="goToLevel()" title="Cambiar nivel" style="font-size:1rem;padding:4px 10px">← Nivel</button>
     <button class="icon-btn" onclick="togglePause()" id="pause-btn" title="Pausar">⏸</button>
     <div class="sbox"><span class="slabel">Puntos</span><span class="sval pts" id="g-pts">00000</span></div>
     <div class="sbox"><span class="slabel">Huecos</span><span class="sval" id="g-blanks">0/0</span></div>
@@ -682,8 +684,12 @@ function wordWeight(word,cap){
 function makeBlanks(caps,pct){
   const candidates=[];
   for(const cap of caps){
-    const words=cap.text.match(/\b[a-zA-Z']{2,}\b/g)||[];
-    for(const w of words) candidates.push({cap,word:w,wt:wordWeight(w,cap)});
+    for(const match of [...cap.text.matchAll(/\b[a-zA-Z']{2,}\b/g)]){
+      const w=match[0];
+      // Skip proper nouns: capitalized words that aren't the first word of the caption
+      if(/^[A-Z]/.test(w)&&match.index>0) continue;
+      candidates.push({cap,word:w,wt:wordWeight(w,cap),pos:match.index});
+    }
   }
   candidates.sort((a,b)=>b.wt!==a.wt?b.wt-a.wt:Math.random()-.5);
   const target=Math.max(5,Math.round(candidates.length*pct/100));
@@ -694,7 +700,7 @@ function makeBlanks(caps,pct){
     const max=Math.ceil(c.cap.text.split(/\s+/).length/4);
     if(used<max){chosen.push(c);capCount.set(c.cap,used+1);}
   }
-  chosen.sort((a,b)=>a.cap.start-b.cap.start);
+  chosen.sort((a,b)=>a.cap.start!==b.cap.start?a.cap.start-b.cap.start:a.pos-b.pos);
   return chosen;
 }
 
@@ -929,7 +935,12 @@ function applyGroupResult(results,fbId){
   }
   refreshStats();
   const nextIdx=results[results.length-1].blankIdx+1;
-  setTimeout(()=>nextIdx<S.blanks.length?showBlank(nextIdx):endGame(),1400);
+  if(allOk){
+    setTimeout(()=>nextIdx<S.blanks.length?showBlank(nextIdx):endGame(),1400);
+  }else{
+    pausePlay();
+    setTimeout(()=>nextIdx<S.blanks.length?showBlank(nextIdx):endGame(),5000);
+  }
 }
 
 function setFb(id,ok,msg){const el=document.getElementById(id);el.className='fb '+(ok?'ok':'bad');el.textContent=msg;}
@@ -996,7 +1007,7 @@ function updTimer(){
   const p=Math.max(0,(S.timeLeft/S.maxTime)*100);
   const bar=document.getElementById('timer-fill');
   bar.style.width=p+'%';
-  bar.style.background=p<25?'#ff1744':p<50?'#ff9800':'#ff4444';
+  bar.style.background=p>50?'#4caf50':p>25?'#ff9800':'#ff1744';
 }
 function timeUp(){
   if(S.answered) return;
@@ -1021,7 +1032,8 @@ function timeUp(){
   }else{setFb('fb-typ',false,`¡Tiempo! Era: ${words}`);}
   refreshStats();
   const nextIdx=group[group.length-1]+1;
-  setTimeout(()=>nextIdx<S.blanks.length?showBlank(nextIdx):endGame(),1400);
+  pausePlay();
+  setTimeout(()=>nextIdx<S.blanks.length?showBlank(nextIdx):endGame(),5000);
 }
 
 function prevBlank(){
@@ -1038,6 +1050,10 @@ function nextBlank(){
   const group=sentenceGroup(S.idx);
   const nextIdx=group[group.length-1]+1;
   nextIdx<S.blanks.length?showBlank(nextIdx):endGame();
+}
+function goToLevel(){
+  clearTimer();clearSentenceTimer();pausePlay();
+  show('screen-level');
 }
 function togglePause(){
   S.paused=!S.paused;
