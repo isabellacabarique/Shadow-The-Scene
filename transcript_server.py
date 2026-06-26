@@ -188,27 +188,30 @@ def transcript():
     # ── Intento 0: Supadata API (bypass de bloqueos de YouTube) ──────────
     if SUPADATA_API_KEY:
         try:
-            import urllib.request as _urs, json as _js
-            _url = f"https://api.supadata.ai/v1/youtube/transcript?videoId={vid}&text=false"
+            import urllib.request as _urs, json as _js, urllib.parse as _up
+            _yt_url = _up.quote(f"https://www.youtube.com/watch?v={vid}", safe="")
+            _url = f"https://api.supadata.ai/v1/transcript?url={_yt_url}&lang=en&mode=native"
             _req = _urs.Request(_url, headers={
                 "x-api-key": SUPADATA_API_KEY,
                 "User-Agent": "Mozilla/5.0"
             })
-            with _urs.urlopen(_req, timeout=15) as _r:
+            with _urs.urlopen(_req, timeout=20) as _r:
+                _status = _r.status
                 _data = _js.loads(_r.read())
-            _content = _data.get("content", [])
-            if _content:
-                caps = []
-                for seg in _content:
-                    start = seg.get("offset", 0) / 1000
-                    dur   = seg.get("duration", 2000) / 1000
-                    text  = str(seg.get("text", "")).replace("\n", " ").strip()
-                    if text:
-                        caps.append({"start": round(start,3), "end": round(start+dur,3),
-                                     "dur": round(dur,3), "text": text})
-                if caps:
-                    print(f"✅ Supadata: {vid} ({len(caps)} segmentos)")
-                    return jsonify({"captions": caps})
+            if _status == 200:
+                _content = _data.get("content", [])
+                if isinstance(_content, list) and _content:
+                    caps = []
+                    for seg in _content:
+                        start = seg.get("offset", 0) / 1000
+                        dur   = seg.get("duration", 2000) / 1000
+                        text  = str(seg.get("text", "")).replace("\n", " ").strip()
+                        if text:
+                            caps.append({"start": round(start,3), "end": round(start+dur,3),
+                                         "dur": round(dur,3), "text": text})
+                    if caps:
+                        print(f"✅ Supadata: {vid} ({len(caps)} segmentos)")
+                        return jsonify({"captions": caps})
         except Exception as _e:
             print(f"⚠️  Supadata falló: {_e}")
 
