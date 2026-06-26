@@ -213,7 +213,28 @@ def transcript():
     except Exception as e:
         print(f"⚠️  yt-dlp falló: {e}")
 
-    # ── Intento 2: Piped API (proxy de YouTube) ─────────────────────────
+    # ── Intento 2: timedtext API directo de YouTube ───────────────────────
+    try:
+        import urllib.request as _ur2, json as _j2, re as _r2
+        _hdrs2 = {"User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1"}
+        # Endpoint antiguo que a veces bypasea el bloqueo
+        for lang in ["en", "en-US", "en-GB"]:
+            try:
+                url_tt = f"https://www.youtube.com/api/timedtext?lang={lang}&v={vid}&fmt=vtt"
+                req_tt = _ur2.Request(url_tt, headers=_hdrs2)
+                with _ur2.urlopen(req_tt, timeout=8) as r:
+                    content = r.read().decode("utf-8", errors="replace")
+                if "WEBVTT" in content:
+                    caps = _parse_vtt(content)
+                    if caps:
+                        print(f"✅ timedtext API para {vid} lang={lang} ({len(caps)} segmentos)")
+                        return jsonify({"captions": caps})
+            except:
+                continue
+    except Exception as e:
+        print(f"⚠️  timedtext API falló: {e}")
+
+    # ── Intento 3: Piped API (proxy de YouTube) ─────────────────────────
     import urllib.request as _ur, json as _json, re as _re
     _PIPED = [
         "https://pipedapi.kavin.rocks",

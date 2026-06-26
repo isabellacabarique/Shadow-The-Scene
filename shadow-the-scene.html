@@ -372,41 +372,35 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-heigh
 
 <!-- ══ SCREEN 5: MANUAL TRANSCRIPT ══ -->
 <div id="screen-manual" class="screen">
+  <div class="brand-bar">
+    <span class="brand-bar-title" onclick="show('screen-url')">Listening Lab &nbsp;|&nbsp; <span>Shadow the Scene</span></span>
+  </div>
   <div class="center">
     <div class="manual-card">
-      <h2>📋 Pegar Transcripción Manualmente</h2>
-      <p>Los navegadores no permiten descargar subtítulos directamente de YouTube por seguridad.
-         Puedes copiarlos tú mismo en menos de 30 segundos:</p>
-
-      <div style="background:rgba(76,175,80,.12);border:1px solid rgba(76,175,80,.3);border-radius:12px;padding:14px 16px;margin-bottom:16px;font-size:.88rem;line-height:1.6;">
-        <strong>💡 ¿Quieres que funcione automáticamente?</strong><br>
-        Ejecuta <code style="background:rgba(0,0,0,.3);padding:2px 6px;border-radius:4px;">transcript_server.py</code> junto a la aplicación y los subtítulos se cargarán solos.<br>
-        <span style="color:var(--light);">Solo necesitas hacerlo una vez en tu computador.</span>
-      </div>
+      <h2 style="font-size:1.3rem;margin-bottom:6px;">📋 Pega la transcripción del video</h2>
+      <p style="margin-bottom:16px;">YouTube bloquea la descarga automática de subtítulos. Cópialos en 3 pasos:</p>
 
       <div class="steps">
         <div class="step">
           <div class="step-n yt">YT</div>
-          <div>Abre el video en <strong>YouTube</strong> en otra pestaña.</div>
+          <div>Abre el video en YouTube en otra pestaña.</div>
         </div>
         <div class="step">
           <div class="step-n">1</div>
-          <div>Debajo del video, haz clic en los <strong>tres puntos (···)</strong> y selecciona
-            <strong>"Mostrar transcripción"</strong> (Show transcript).</div>
+          <div>Debajo del video → <strong>tres puntos (···)</strong> → <strong>"Mostrar transcripción"</strong>.</div>
         </div>
         <div class="step">
           <div class="step-n">2</div>
-          <div>En el panel que aparece a la derecha, haz clic dentro y pulsa
-            <strong>Ctrl+A</strong> (o Cmd+A en Mac) para seleccionar todo.</div>
+          <div>En el panel, <strong>Ctrl+A</strong> para seleccionar todo y <strong>Ctrl+C</strong> para copiar.</div>
         </div>
         <div class="step">
           <div class="step-n">3</div>
-          <div>Copia con <strong>Ctrl+C</strong> y pégalo en el cuadro de abajo.</div>
+          <div>Pégalo aquí abajo y haz clic en <strong>Crear ejercicio</strong>.</div>
         </div>
       </div>
 
       <textarea id="transcript-area" class="transcript-area"
-        placeholder="Pega la transcripción de YouTube aquí…&#10;&#10;Ejemplo:&#10;0:00&#10;Hello everyone and welcome&#10;0:04&#10;to today's lesson about…"></textarea>
+        placeholder="Pega la transcripción aquí…&#10;&#10;Ejemplo:&#10;0:00&#10;Hello everyone&#10;0:04&#10;and welcome to…"></textarea>
 
       <div id="manual-error" class="manual-error"></div>
 
