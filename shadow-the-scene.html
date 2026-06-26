@@ -4,7 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Shadow the Scene · Listening Lab</title>
-<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Nunito:wght@300;400;600&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/dist/tabler-icons.min.css" rel="stylesheet">
 <script src="https://www.youtube.com/iframe_api"></script>
 <style>
 :root {
@@ -61,14 +62,52 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-heigh
 .level-card .licon{position:absolute;right:18px;bottom:8px;font-size:4.5rem;opacity:.18;user-select:none;}
 
 /* ── MODE SCREEN ── */
-.mode-header{text-align:center;padding:36px 20px 20px;font-size:1.9rem;font-weight:700;}
-.mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;max-width:700px;width:100%;}
-.mode-card{background:var(--card);border-radius:20px;padding:40px 28px;cursor:pointer;
-  text-align:center;border:2px solid transparent;transition:all .2s;}
-.mode-card:hover{border-color:#64b5f6;transform:scale(1.03);}
-.mode-card .micon{font-size:3rem;margin-bottom:14px;}
-.mode-card h3{font-size:1.5rem;margin-bottom:10px;}
-.mode-card p{color:var(--light);font-size:.9rem;line-height:1.5;}
+.mode-header{text-align:center;padding:52px 20px 6px;font-size:2rem;font-weight:700;
+  background:linear-gradient(90deg,#64b5f6,#a78bfa);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.mode-subtitle{text-align:center;color:var(--light);font-size:.9rem;margin:0 0 36px;}
+.mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;max-width:600px;width:100%;}
+.mode-card{background:var(--card);border-radius:22px;padding:28px 20px 22px;cursor:pointer;
+  text-align:center;border:1.5px solid rgba(255,255,255,.08);
+  transition:transform .22s ease,border-color .22s;position:relative;overflow:hidden;}
+.mode-card::after{content:'';position:absolute;inset:0;opacity:0;transition:opacity .25s;
+  pointer-events:none;border-radius:22px;}
+.mode-card.m-typing::after{background:radial-gradient(ellipse at 50% -10%,rgba(76,142,255,.25),transparent 65%);}
+.mode-card.m-sel::after{background:radial-gradient(ellipse at 50% -10%,rgba(156,39,176,.25),transparent 65%);}
+.mode-card:hover{transform:translateY(-6px);}
+.mode-card:hover::after{opacity:1;}
+.mode-card.m-typing:hover{border-color:rgba(76,142,255,.65);}
+.mode-card.m-sel:hover{border-color:rgba(156,39,176,.65);}
+.mode-icon-box{width:62px;height:62px;border-radius:14px;display:flex;align-items:center;
+  justify-content:center;margin:0 auto 16px;}
+.mode-card.m-typing .mode-icon-box{background:linear-gradient(145deg,#1a3a82,#3461c4);}
+.mode-card.m-sel .mode-icon-box{background:linear-gradient(145deg,#4a1169,#7b27b0);}
+.mode-icon-box i{font-size:1.9rem;color:#fff;}
+.mode-badge{display:inline-block;padding:3px 11px;border-radius:20px;font-size:.65rem;
+  font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:11px;}
+.mode-card.m-typing .mode-badge{background:rgba(76,142,255,.16);color:#82b4ff;}
+.mode-card.m-sel .mode-badge{background:rgba(156,39,176,.16);color:#d09cf5;}
+.mode-card h3{font-size:1.1rem;font-weight:700;color:#fff;margin:0 0 8px;}
+.mode-card>p{color:var(--light);font-size:.82rem;line-height:1.55;margin:0 0 14px;}
+/* mini exercise preview */
+.mode-preview{background:#132040;border-radius:10px;padding:10px 12px;margin:0 0 14px;}
+.tp-line{display:flex;align-items:center;gap:6px;margin-bottom:5px;}
+.tp-dot{height:7px;border-radius:3px;background:rgba(176,196,222,.25);}
+.tp-blank{width:56px;height:7px;border-radius:3px;border:1.5px dashed #4c8eff;position:relative;}
+.tp-cursor{display:inline-block;width:1.5px;height:11px;background:#4c8eff;
+  position:absolute;left:6px;top:-2px;animation:blink 1s step-end infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+.sp-row{display:flex;align-items:center;gap:7px;margin-bottom:5px;}
+.sp-row:last-child{margin-bottom:0;}
+.sp-opt{flex:1;border-radius:6px;padding:4px 8px;font-size:.72rem;text-align:left;
+  border:1px solid rgba(255,255,255,.1);color:var(--light);}
+.sp-opt.sp-sel{background:rgba(156,39,176,.25);border-color:rgba(156,39,176,.7);
+  color:#d09cf5;font-weight:600;}
+.sp-opt.sp-wrong{background:rgba(229,57,53,.12);border-color:rgba(229,57,53,.4);color:#ef9a9a;}
+/* card caret */
+.mode-caret{display:inline-flex;align-items:center;gap:5px;
+  color:rgba(255,255,255,.28);font-size:.78rem;transition:color .2s,gap .2s;}
+.mode-card:hover .mode-caret{color:rgba(255,255,255,.65);gap:9px;}
 
 /* ── LOADING SCREEN ── */
 .loading-wrap{text-align:center;}
@@ -202,6 +241,19 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-heigh
 </head>
 <body>
 
+<!-- ══ LOGO ACADEMIA ══ -->
+<div style="position:fixed;top:14px;left:18px;z-index:200;user-select:none;pointer-events:none;">
+  <div style="display:flex;align-items:center;gap:9px;line-height:1;">
+    <div style="display:flex;gap:4px;align-items:center;">
+      <span style="width:7px;height:7px;border-radius:50%;background:#fff;display:block;"></span>
+      <span style="width:7px;height:7px;border-radius:50%;background:#fff;display:block;"></span>
+      <span style="width:7px;height:7px;border-radius:50%;background:#fff;display:block;"></span>
+    </div>
+    <span style="font-family:'Nunito',sans-serif;font-size:.92rem;font-weight:300;color:#fff;letter-spacing:.04em;">immersa academy</span>
+  </div>
+  <div style="font-family:'Nunito',sans-serif;font-size:.56rem;font-weight:400;color:rgba(255,255,255,.58);letter-spacing:.06em;margin-top:2px;margin-left:38px;">by teacher isa</div>
+</div>
+
 <!-- ══ SCREEN 1: URL ══ -->
 <div id="screen-url" class="screen active">
   <div class="center">
@@ -252,19 +304,48 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-heigh
 
 <!-- ══ SCREEN 3: MODE ══ -->
 <div id="screen-mode" class="screen">
-  <div class="mode-header">Selecciona un Modo de Práctica</div>
-  <div class="center">
+  <div class="mode-header">¿Cómo quieres practicar?</div>
+  <p class="mode-subtitle">Elige el tipo de ejercicio para este video</p>
+  <div class="center" style="padding-top:0">
     <div class="mode-grid">
-      <div class="mode-card" onclick="pickMode('typing')">
-        <div class="micon">⌨️</div>
-        <h3>Modo Escritura</h3>
-        <p>Escribe la palabra o frase que falta mientras escuchas el video</p>
+
+      <div class="mode-card m-typing" onclick="pickMode('typing')">
+        <div class="mode-icon-box"><i class="ti ti-keyboard" aria-hidden="true"></i></div>
+        <span class="mode-badge">Escritura libre</span>
+        <h3>Escribe la palabra</h3>
+        <p>Escucha y escribe la palabra que falta sin ayuda</p>
+        <div class="mode-preview">
+          <div class="tp-line">
+            <div class="tp-dot" style="width:30px"></div>
+            <div class="tp-blank"><span class="tp-cursor"></span></div>
+            <div class="tp-dot" style="width:22px"></div>
+          </div>
+          <div class="tp-line" style="opacity:.4">
+            <div class="tp-dot" style="width:44px"></div>
+            <div class="tp-dot" style="width:28px"></div>
+          </div>
+        </div>
+        <div class="mode-caret">Seleccionar <span>→</span></div>
       </div>
-      <div class="mode-card" onclick="pickMode('selection')">
-        <div class="micon">☑️</div>
-        <h3>Modo Selección</h3>
-        <p>Elige la respuesta correcta entre las opciones presentadas</p>
+
+      <div class="mode-card m-sel" onclick="pickMode('selection')">
+        <div class="mode-icon-box"><i class="ti ti-list-check" aria-hidden="true"></i></div>
+        <span class="mode-badge">Múltiple opción</span>
+        <h3>Escoge la respuesta</h3>
+        <p>Elige la palabra correcta entre las opciones</p>
+        <div class="mode-preview">
+          <div class="sp-row">
+            <div class="sp-opt">getting</div>
+            <div class="sp-opt sp-sel">✓ got</div>
+          </div>
+          <div class="sp-row">
+            <div class="sp-opt sp-wrong">✗ get</div>
+            <div class="sp-opt">gotten</div>
+          </div>
+        </div>
+        <div class="mode-caret">Seleccionar <span>→</span></div>
       </div>
+
     </div>
   </div>
 </div>
