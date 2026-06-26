@@ -145,10 +145,21 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-heigh
 .manual-error{color:#ef9a9a;font-size:.85rem;margin-top:8px;display:none;
   padding:8px;background:rgba(229,57,53,.15);border-radius:8px;text-align:center;}
 
+/* ── BRAND HEADER (todas las pantallas menos url) ── */
+.brand-bar{
+  display:flex;align-items:center;padding:14px 24px;
+  background:rgba(0,0,0,.25);border-bottom:1px solid rgba(255,255,255,.07);
+}
+.brand-bar-title{
+  font-family:'Nunito',sans-serif;font-size:.82rem;font-weight:300;
+  color:rgba(255,255,255,.5);letter-spacing:.12em;text-transform:uppercase;
+}
+.brand-bar-title span{color:rgba(255,255,255,.75);font-weight:400;}
+
 /* ── GAME SCREEN ── */
 #screen-game{padding:0;}
-.topbar{display:flex;align-items:center;gap:16px;padding:11px 18px;
-  background:rgba(0,0,0,.35);flex-wrap:wrap;}
+.topbar{display:flex;align-items:center;gap:14px;padding:9px 18px;
+  background:rgba(0,0,0,.35);}
 .sbox{display:flex;align-items:center;gap:8px;font-size:.88rem;}
 .slabel{color:var(--light);}
 .sval{background:var(--card2);padding:4px 12px;border-radius:6px;font-weight:700;
@@ -163,8 +174,8 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-heigh
 .timer-track{height:6px;background:rgba(255,255,255,.1);}
 .timer-fill{height:100%;background:#ff4444;transition:width .1s linear;}
 .game-body{display:flex;flex:1;min-height:0;}
-.video-col{flex:2;background:#000;display:flex;align-items:center;justify-content:center;min-height:280px;}
-#yt-player{width:100%;aspect-ratio:16/9;}
+.video-col{flex:2;max-width:65%;background:#000;display:flex;flex-direction:column;min-height:280px;}
+#yt-player{width:100%;aspect-ratio:16/9;flex-shrink:0;}
 .answer-col{flex:1;min-width:270px;background:var(--card);
   display:flex;flex-direction:column;gap:10px;padding:18px;
   justify-content:flex-start;overflow-y:auto;}
@@ -249,23 +260,22 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-heigh
 </head>
 <body>
 
-<!-- ══ LOGO ACADEMIA ══ -->
-<div style="position:fixed;top:14px;left:18px;z-index:200;user-select:none;pointer-events:none;">
-  <div style="display:flex;align-items:center;gap:9px;line-height:1;">
-    <div style="display:flex;gap:4px;align-items:center;">
-      <span style="width:7px;height:7px;border-radius:50%;background:#fff;display:block;"></span>
-      <span style="width:7px;height:7px;border-radius:50%;background:#fff;display:block;"></span>
-      <span style="width:7px;height:7px;border-radius:50%;background:#fff;display:block;"></span>
-    </div>
-    <span style="font-family:'Nunito',sans-serif;font-size:.92rem;font-weight:300;color:#fff;letter-spacing:.04em;">immersa academy</span>
-  </div>
-  <div style="font-family:'Nunito',sans-serif;font-size:.56rem;font-weight:400;color:rgba(255,255,255,.58);letter-spacing:.06em;margin-top:2px;margin-left:38px;">by teacher isa</div>
-</div>
-
 <!-- ══ SCREEN 1: URL ══ -->
 <div id="screen-url" class="screen active">
   <div class="center">
     <div class="url-card">
+      <!-- Logo academia solo en página principal -->
+      <div style="display:flex;flex-direction:column;align-items:center;margin-bottom:24px;">
+        <div style="display:flex;align-items:center;gap:9px;line-height:1;">
+          <div style="display:flex;gap:4px;">
+            <span style="width:8px;height:8px;border-radius:50%;background:#fff;display:block;"></span>
+            <span style="width:8px;height:8px;border-radius:50%;background:#fff;display:block;"></span>
+            <span style="width:8px;height:8px;border-radius:50%;background:#fff;display:block;"></span>
+          </div>
+          <span style="font-family:'Nunito',sans-serif;font-size:1.05rem;font-weight:300;color:#fff;letter-spacing:.04em;">immersa academy</span>
+        </div>
+        <div style="font-family:'Nunito',sans-serif;font-size:.62rem;color:rgba(255,255,255,.55);letter-spacing:.06em;margin-top:3px;margin-left:42px;">by teacher isa</div>
+      </div>
       <div class="logo">🎧</div>
       <h1>Shadow the Scene</h1>
       <p>Listening Lab · Mejora tu inglés con videos reales</p>
@@ -282,6 +292,7 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-heigh
 
 <!-- ══ SCREEN 2: LEVEL ══ -->
 <div id="screen-level" class="screen">
+  <div class="brand-bar"><span class="brand-bar-title">Listening Lab &nbsp;|&nbsp; <span>Shadow the Scene</span></span></div>
   <div class="center" style="flex-direction:column;gap:28px;">
     <div style="text-align:center;">
       <div class="level-header" style="padding:0;">Selecciona un Nivel</div>
@@ -309,6 +320,7 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-heigh
 
 <!-- ══ SCREEN 3: MODE ══ -->
 <div id="screen-mode" class="screen">
+  <div class="brand-bar"><span class="brand-bar-title">Listening Lab &nbsp;|&nbsp; <span>Shadow the Scene</span></span></div>
   <div class="center" style="flex-direction:column;gap:32px;">
     <div style="text-align:center;">
       <button onclick="show('screen-level')" style="background:none;border:none;color:rgba(255,255,255,.45);font-size:.85rem;cursor:pointer;margin-bottom:18px;display:inline-flex;align-items:center;gap:5px;transition:color .2s;font-family:inherit;" onmouseover="this.style.color='rgba(255,255,255,.85)'" onmouseout="this.style.color='rgba(255,255,255,.45)'">← Volver al nivel</button>
@@ -400,7 +412,9 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-heigh
 <!-- ══ SCREEN 6: GAME ══ -->
 <div id="screen-game" class="screen">
   <div class="topbar">
-    <button class="icon-btn" onclick="goToLevel()" title="Cambiar nivel" style="font-size:1rem;padding:4px 10px">← Nivel</button>
+    <span class="brand-bar-title" style="font-size:.75rem;margin-right:6px;">Listening Lab &nbsp;|&nbsp; <span>Shadow the Scene</span></span>
+    <div style="width:1px;height:22px;background:rgba(255,255,255,.15);margin-right:4px;"></div>
+    <button class="icon-btn" onclick="goToLevel()" title="Cambiar nivel" style="font-size:.88rem;padding:4px 10px">← Nivel</button>
     <button class="icon-btn" onclick="togglePause()" id="pause-btn" title="Pausar">⏸</button>
     <div class="sbox"><span class="slabel">Puntos</span><span class="sval pts" id="g-pts">00000</span></div>
     <div class="sbox"><span class="slabel">Huecos</span><span class="sval" id="g-blanks">0/0</span></div>
@@ -408,12 +422,14 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-heigh
     <div class="sbox"><span class="slabel">Fallos</span><span class="sval err" id="g-err">0</span></div>
     <div class="spacer"></div>
     <div class="sbox"><span class="lives-display" id="g-lives">❤️❤️❤️</span></div>
-    <div class="sbox"><span class="slabel">Bonus</span><div class="bonus-ring" id="g-bonus">x1</div></div>
     <button class="icon-btn" onclick="showHelp()" title="Ayuda">?</button>
   </div>
   <div class="timer-track"><div class="timer-fill" id="timer-fill" style="width:100%"></div></div>
   <div class="game-body">
-    <div class="video-col"><div id="yt-player"></div></div>
+    <div class="video-col">
+      <div id="yt-player"></div>
+      <div class="sentence-bar" id="sentence-bar">…</div>
+    </div>
     <!-- Selection -->
     <div class="answer-col" id="sel-panel" style="display:none">
       <div class="fb" id="fb-sel"></div>
@@ -430,7 +446,6 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-heigh
       <button class="btn-replay" onclick="replaySeg()">🔁 Repetir audio</button>
     </div>
   </div>
-  <div class="sentence-bar" id="sentence-bar">…</div>
   <div class="nav-bar">
     <button class="nav-btn" onclick="prevBlank()">⟵</button>
     <span id="blank-prog">1 / 1</span>
