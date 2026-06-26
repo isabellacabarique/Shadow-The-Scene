@@ -52,6 +52,12 @@ def index():
     return send_from_directory(str(folder), "shadow-the-scene.html")
 
 
+@app.route("/<path:filename>")
+def static_files(filename):
+    folder = Path(__file__).parent
+    return send_from_directory(str(folder), filename)
+
+
 @app.route("/report-error", methods=["POST"])
 def report_error():
     import json as _json
