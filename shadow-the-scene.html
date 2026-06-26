@@ -1397,7 +1397,7 @@ function refreshStats(){
   document.getElementById('g-pts').textContent=String(S.score).padStart(5,'0');
   document.getElementById('g-cor').textContent=S.cor;
   document.getElementById('g-err').textContent=S.err;
-  document.getElementById('g-bonus').textContent=`x${S.bonus}`;
+  const bonusEl=document.getElementById('g-bonus');if(bonusEl)bonusEl.textContent=`x${S.bonus}`;
 }
 
 function startTimer(){
