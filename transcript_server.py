@@ -183,7 +183,37 @@ def transcript():
     if not vid:
         return jsonify({"error": "Falta el ID del video"}), 400
 
-    # ── Intento 0a: Piped API (proxy de YouTube) ─────────────────────────
+    # ── Intento 1: yt-dlp (más confiable contra bloqueos de YouTube) ─────
+    try:
+        import yt_dlp, tempfile, os, glob as _glob
+        with tempfile.TemporaryDirectory() as tmpdir:
+            ydl_opts = {
+                'skip_download': True,
+                'writesubtitles': True,
+                'writeautomaticsub': True,
+                'subtitleslangs': ['en', 'en-US', 'en-GB'],
+                'subtitlesformat': 'vtt',
+                'outtmpl': os.path.join(tmpdir, '%(id)s'),
+                'quiet': True,
+                'no_warnings': True,
+            }
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                ydl.download([f"https://www.youtube.com/watch?v={vid}"])
+            vtt_files = _glob.glob(os.path.join(tmpdir, '*.vtt'))
+            if vtt_files:
+                # Prefer manual subs over auto-generated
+                manual = [f for f in vtt_files if '.en.' in f and 'auto' not in f]
+                chosen = manual[0] if manual else vtt_files[0]
+                with open(chosen, encoding='utf-8') as f:
+                    vtt_text = f.read()
+                caps = _parse_vtt(vtt_text)
+                if caps:
+                    print(f"✅ yt-dlp subtítulos para {vid} ({len(caps)} segmentos)")
+                    return jsonify({"captions": caps})
+    except Exception as e:
+        print(f"⚠️  yt-dlp falló: {e}")
+
+    # ── Intento 2: Piped API (proxy de YouTube) ─────────────────────────
     import urllib.request as _ur, json as _json, re as _re
     _PIPED = [
         "https://pipedapi.kavin.rocks",
