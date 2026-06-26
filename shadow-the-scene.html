@@ -250,13 +250,88 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-heigh
   background:url('fondo.png') center center / cover no-repeat;
 }
 
-/* ── RESPONSIVE ── */
-@media(max-width:760px){
-  .level-grid,.mode-grid{grid-template-columns:1fr;}
+/* ── RESPONSIVE (móvil) ── */
+@media(max-width:600px){
+
+  /* ── Pantalla principal ── */
+  #screen-url .center{padding:12px 10px;}
+  .url-card{padding:28px 18px;border-radius:16px;max-width:100%;}
+  .url-card h1{font-size:1.8rem;}
+  .url-card>p{font-size:.9rem;margin-bottom:20px;}
+  .url-row{flex-direction:column;}
+  .btn-primary{font-size:.95rem;padding:13px 20px;}
+
+  /* ── Pantalla de nivel ── */
+  .level-grid{grid-template-columns:1fr;padding:0 14px;gap:12px;}
+  .level-card{min-height:90px;padding:20px 18px;}
+  .level-card h3{font-size:1.5rem;}
+  .level-card p{font-size:.82rem;}
+  .level-card .licon{font-size:3.2rem;}
+  .level-header{font-size:1.5rem;padding:24px 16px 14px;}
+
+  /* ── Pantalla de modo ── */
+  .mode-grid{grid-template-columns:1fr;padding:0 14px;gap:12px;max-width:100%;}
+  .mode-header{padding:28px 16px 4px;font-size:1.5rem;}
+  .mode-subtitle{margin-bottom:20px;font-size:.82rem;}
+  .mode-card{padding:20px 16px 16px;}
+
+  /* ── Brand bar ── */
+  .brand-bar{padding:10px 14px;}
+  .brand-bar-title{font-size:.72rem;}
+
+  /* ── Pantalla de juego: topbar ── */
+  .topbar{padding:5px 8px;gap:6px;overflow-x:auto;flex-wrap:nowrap;scrollbar-width:none;}
+  .topbar::-webkit-scrollbar{display:none;}
+  /* Ocultar título en juego (ahorra espacio) */
+  .topbar .brand-bar-title{display:none;}
+  .topbar > div[style*="width:1px"]{display:none;}
+  .sbox{gap:4px;font-size:.72rem;flex-shrink:0;}
+  .slabel{font-size:.65rem;}
+  .sval{font-size:.8rem;padding:3px 7px;min-width:32px;}
+  .sval.pts{font-size:.9rem;min-width:54px;letter-spacing:1px;}
+  .lives-display{font-size:.9rem;}
+  .icon-btn{font-size:1.1rem;padding:3px 6px;}
+  /* Botón cambiar nivel más compacto */
+  .topbar > button:not(.icon-btn){font-size:.72rem;padding:4px 8px;}
+
+  /* ── Video y paneles de respuesta ── */
   .game-body{flex-direction:column;}
-  .answer-col{min-width:unset;}
+  .video-col{flex:none;min-height:0;}
+  #yt-player{width:100%;aspect-ratio:16/9;}
+  .answer-col{
+    flex:none;min-width:unset;
+    max-height:38vh;overflow-y:auto;
+    padding:12px;gap:8px;
+  }
+  .opt-btn{padding:13px 12px;font-size:.95rem;}
+  .type-input{font-size:1rem;padding:11px;}
+  .btn-confirm{padding:11px;}
+  .btn-replay{padding:8px;font-size:.82rem;}
+
+  /* ── Barra de transcripción ── */
+  .sentence-bar{
+    padding:10px 14px;font-size:.95rem;
+    min-height:70px;line-height:1.8;
+  }
+  .cap-line.current{font-size:1rem;}
+  .cap-line.prev,.cap-line.next{font-size:.82rem;}
+
+  /* ── Barra de navegación ── */
+  .nav-bar{padding:6px 12px;}
+  .nav-btn{padding:6px 14px;font-size:1rem;}
+  #blank-prog{font-size:.82rem;}
+
+  /* ── Pantalla de transcripción manual ── */
+  .manual-card{padding:22px 14px;border-radius:14px;}
+  .manual-card h2{font-size:1.3rem;}
+  .manual-actions{flex-direction:column;}
+
+  /* ── Pantalla de resultados ── */
+  .sum-card{padding:24px 16px;border-radius:14px;}
+  .sum-card h2{font-size:1.5rem;}
   .sgrid{grid-template-columns:1fr 1fr;}
-  .url-card,.manual-card{padding:28px 18px;}
+  .sum-btns{flex-direction:column;}
+  .grade-ring{width:100px;height:100px;font-size:1.8rem;}
 }
 </style>
 </head>
