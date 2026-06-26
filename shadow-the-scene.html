@@ -278,7 +278,8 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-heigh
       </div>
       <div class="logo">🎧</div>
       <h1>Shadow the Scene</h1>
-      <p>Listening Lab · Mejora tu inglés con videos reales</p>
+      <p style="font-family:'Nunito',sans-serif;font-size:.72rem;font-weight:400;color:rgba(255,255,255,.4);letter-spacing:.14em;text-transform:uppercase;margin-bottom:6px;">Listening Lab &nbsp;|&nbsp; Shadow the Scene</p>
+      <p>Mejora tu inglés con videos reales</p>
       <div class="url-row">
         <input id="url-input" class="url-input" type="text"
           placeholder="Pega aquí el link del video" />
@@ -292,7 +293,10 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-heigh
 
 <!-- ══ SCREEN 2: LEVEL ══ -->
 <div id="screen-level" class="screen">
-  <div class="brand-bar"><span class="brand-bar-title">Listening Lab &nbsp;|&nbsp; <span>Shadow the Scene</span></span></div>
+  <div class="brand-bar">
+    <button onclick="show('screen-url')" style="background:none;border:none;color:rgba(255,255,255,.45);font-size:.85rem;cursor:pointer;display:inline-flex;align-items:center;gap:5px;font-family:inherit;padding:0;margin-right:14px;transition:color .2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(255,255,255,.45)'">← Volver</button>
+    <span class="brand-bar-title">Listening Lab &nbsp;|&nbsp; <span>Shadow the Scene</span></span>
+  </div>
   <div class="center" style="flex-direction:column;gap:28px;">
     <div style="text-align:center;">
       <div class="level-header" style="padding:0;">Selecciona un Nivel</div>
@@ -412,9 +416,9 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-heigh
 <!-- ══ SCREEN 6: GAME ══ -->
 <div id="screen-game" class="screen">
   <div class="topbar">
-    <span class="brand-bar-title" style="font-size:.75rem;margin-right:6px;">Listening Lab &nbsp;|&nbsp; <span>Shadow the Scene</span></span>
-    <div style="width:1px;height:22px;background:rgba(255,255,255,.15);margin-right:4px;"></div>
-    <button class="icon-btn" onclick="goToLevel()" title="Cambiar nivel" style="font-size:.88rem;padding:4px 10px">← Nivel</button>
+    <span class="brand-bar-title" style="font-size:.72rem;">Listening Lab &nbsp;|&nbsp; <span>Shadow the Scene</span></span>
+    <div style="width:1px;height:20px;background:rgba(255,255,255,.15);flex-shrink:0;"></div>
+    <button onclick="goToLevel()" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:8px;color:#fff;font-size:.82rem;cursor:pointer;padding:5px 12px;font-family:inherit;transition:background .15s;flex-shrink:0;" onmouseover="this.style.background='rgba(255,255,255,.2)'" onmouseout="this.style.background='rgba(255,255,255,.1)'">← Cambiar nivel</button>
     <button class="icon-btn" onclick="togglePause()" id="pause-btn" title="Pausar">⏸</button>
     <div class="sbox"><span class="slabel">Puntos</span><span class="sval pts" id="g-pts">00000</span></div>
     <div class="sbox"><span class="slabel">Huecos</span><span class="sval" id="g-blanks">0/0</span></div>
