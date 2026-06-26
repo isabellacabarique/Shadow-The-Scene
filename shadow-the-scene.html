@@ -29,13 +29,15 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-heigh
 .icon-btn:hover{background:rgba(255,255,255,.12);}
 
 /* ── URL SCREEN ── */
-.url-card{background:var(--card);border-radius:20px;padding:48px 40px;max-width:600px;
-  width:100%;box-shadow:0 20px 60px rgba(0,0,0,.4);text-align:center;}
-.logo{font-size:3rem;margin-bottom:10px;}
-.url-card h1{font-size:2rem;margin-bottom:8px;
+.url-card{background:rgba(30,53,100,.82);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  border-radius:24px;padding:64px 60px;max-width:820px;
+  width:100%;box-shadow:0 24px 72px rgba(0,0,0,.5);text-align:center;
+  border:1px solid rgba(255,255,255,.1);}
+.logo{font-size:4rem;margin-bottom:14px;}
+.url-card h1{font-size:2.6rem;margin-bottom:10px;
   background:linear-gradient(90deg,#64b5f6,#a78bfa);
   -webkit-background-clip:text;-webkit-text-fill-color:transparent;}
-.url-card>p{color:var(--light);margin-bottom:28px;font-size:.95rem;}
+.url-card>p{color:var(--light);margin-bottom:32px;font-size:1rem;}
 .url-row{display:flex;gap:10px;margin-bottom:12px;}
 .url-input{flex:1;padding:14px 18px;border-radius:12px;border:2px solid rgba(255,255,255,.2);
   background:rgba(255,255,255,.08);color:#fff;font-size:1rem;outline:none;transition:border-color .2s;}
@@ -161,10 +163,11 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-heigh
 .timer-track{height:6px;background:rgba(255,255,255,.1);}
 .timer-fill{height:100%;background:#ff4444;transition:width .1s linear;}
 .game-body{display:flex;flex:1;min-height:0;}
-.video-col{flex:2;background:#000;display:flex;align-items:center;justify-content:center;min-height:280px;}
+.video-col{flex:2;background:#000;display:flex;flex-direction:column;min-height:280px;}
 #yt-player{width:100%;aspect-ratio:16/9;}
 .answer-col{flex:1;min-width:270px;background:var(--card);
-  display:flex;flex-direction:column;gap:10px;padding:18px;justify-content:center;}
+  display:flex;flex-direction:column;gap:10px;padding:18px;
+  justify-content:flex-start;overflow-y:auto;}
 .opt-btn{padding:17px 18px;border-radius:12px;border:none;background:var(--card2);
   color:#fff;font-size:1.05rem;cursor:pointer;text-align:center;transition:all .15s;width:100%;}
 .opt-btn:hover:not(:disabled){background:#2d4d8a;transform:translateX(3px);}
@@ -313,18 +316,7 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-heigh
         <div class="mode-icon-box"><i class="ti ti-keyboard" aria-hidden="true"></i></div>
         <span class="mode-badge">Escritura libre</span>
         <h3>Escribe la palabra</h3>
-        <p>Escucha y escribe la palabra que falta sin ayuda</p>
-        <div class="mode-preview">
-          <div class="tp-line">
-            <div class="tp-dot" style="width:30px"></div>
-            <div class="tp-blank"><span class="tp-cursor"></span></div>
-            <div class="tp-dot" style="width:22px"></div>
-          </div>
-          <div class="tp-line" style="opacity:.4">
-            <div class="tp-dot" style="width:44px"></div>
-            <div class="tp-dot" style="width:28px"></div>
-          </div>
-        </div>
+        <p>Escucha la oración y escribe las palabras que faltan sin ayuda</p>
         <div class="mode-caret">Seleccionar <span>→</span></div>
       </div>
 
@@ -332,17 +324,7 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-heigh
         <div class="mode-icon-box"><i class="ti ti-list-check" aria-hidden="true"></i></div>
         <span class="mode-badge">Múltiple opción</span>
         <h3>Escoge la respuesta</h3>
-        <p>Elige la palabra correcta entre las opciones</p>
-        <div class="mode-preview">
-          <div class="sp-row">
-            <div class="sp-opt">getting</div>
-            <div class="sp-opt sp-sel">✓ got</div>
-          </div>
-          <div class="sp-row">
-            <div class="sp-opt sp-wrong">✗ get</div>
-            <div class="sp-opt">gotten</div>
-          </div>
-        </div>
+        <p>Elige la palabra correcta entre las opciones que aparecen en pantalla</p>
         <div class="mode-caret">Seleccionar <span>→</span></div>
       </div>
 
@@ -426,7 +408,10 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-heigh
   </div>
   <div class="timer-track"><div class="timer-fill" id="timer-fill" style="width:100%"></div></div>
   <div class="game-body">
-    <div class="video-col"><div id="yt-player"></div></div>
+    <div class="video-col">
+      <div id="yt-player"></div>
+      <div class="sentence-bar" id="sentence-bar">…</div>
+    </div>
     <!-- Selection -->
     <div class="answer-col" id="sel-panel" style="display:none">
       <div class="fb" id="fb-sel"></div>
@@ -443,7 +428,6 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-heigh
       <button class="btn-replay" onclick="replaySeg()">🔁 Repetir audio</button>
     </div>
   </div>
-  <div class="sentence-bar" id="sentence-bar">…</div>
   <div class="nav-bar">
     <button class="nav-btn" onclick="prevBlank()">⟵</button>
     <span id="blank-prog">1 / 1</span>
