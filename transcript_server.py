@@ -177,11 +177,40 @@ def _parse_vtt(vtt):
     return caps
 
 
+SUPADATA_API_KEY = os.environ.get("SUPADATA_API_KEY", "")
+
 @app.route("/transcript")
 def transcript():
     vid = request.args.get("v", "").strip()
     if not vid:
         return jsonify({"error": "Falta el ID del video"}), 400
+
+    # ── Intento 0: Supadata API (bypass de bloqueos de YouTube) ──────────
+    if SUPADATA_API_KEY:
+        try:
+            import urllib.request as _urs, json as _js
+            _url = f"https://api.supadata.ai/v1/youtube/transcript?videoId={vid}&text=false"
+            _req = _urs.Request(_url, headers={
+                "x-api-key": SUPADATA_API_KEY,
+                "User-Agent": "Mozilla/5.0"
+            })
+            with _urs.urlopen(_req, timeout=15) as _r:
+                _data = _js.loads(_r.read())
+            _content = _data.get("content", [])
+            if _content:
+                caps = []
+                for seg in _content:
+                    start = seg.get("offset", 0) / 1000
+                    dur   = seg.get("duration", 2000) / 1000
+                    text  = str(seg.get("text", "")).replace("\n", " ").strip()
+                    if text:
+                        caps.append({"start": round(start,3), "end": round(start+dur,3),
+                                     "dur": round(dur,3), "text": text})
+                if caps:
+                    print(f"✅ Supadata: {vid} ({len(caps)} segmentos)")
+                    return jsonify({"captions": caps})
+        except Exception as _e:
+            print(f"⚠️  Supadata falló: {_e}")
 
     # ── Intento 1: yt-dlp (más confiable contra bloqueos de YouTube) ─────
     try:
