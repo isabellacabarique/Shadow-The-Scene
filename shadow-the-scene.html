@@ -723,40 +723,123 @@ function parseManualTranscript(raw){
   return caps.length>1?caps:null;
 }
 
-const CONTRACTIONS=/\b(I'm|you're|he's|she's|it's|we're|they're|I've|you've|we've|they've|I'll|you'll|he'll|she'll|it'll|we'll|they'll|I'd|you'd|he'd|she'd|we'd|they'd|isn't|aren't|wasn't|weren't|don't|doesn't|didn't|won't|wouldn't|can't|couldn't|shouldn't|mustn't|haven't|hasn't|hadn't|that's|what's|there's|here's|who's|how's|gonna|wanna|gotta|kinda|sorta|lemme|gimme|y'all|could've|would've|should've|might've|must've)\b/gi;
-const PHRASAL=['look up','give up','put on','take off','come on','go on','find out','turn on','turn off','pick up','set up','show up','come back','go back','get up','sit down','stand up','move on','carry on','go ahead','run out','work out','figure out','bring up','keep up','make up','end up','grow up','break down','slow down','calm down','break up','catch up','get over','get through','look after','put away','throw away','get together','get along','watch out','hold on','hang on'];
-const EXPRESSIONS=['you know','kind of','sort of','a lot of','of course','right now','at least','at all','after all','in fact','as well','for sure','I mean','you see','by the way','to be honest','to be fair','hold on','come on','what about','how about','no way','all right','that\'s right','all of a sudden','more or less','in other words','first of all','above all','at the end of the day'];
+// ── Contractions + reductions (weight 10) ─────────────────────────────────
+const CONTRACTIONS=/\b(I'm|you're|he's|she's|it's|we're|they're|I've|you've|we've|they've|I'll|you'll|he'll|she'll|it'll|we'll|they'll|I'd|you'd|he'd|she'd|we'd|they'd|isn't|aren't|wasn't|weren't|don't|doesn't|didn't|won't|wouldn't|can't|couldn't|shouldn't|mustn't|haven't|hasn't|hadn't|that's|what's|there's|here's|who's|how's|gonna|wanna|gotta|kinda|sorta|lemme|gimme|y'all|could've|would've|should've|might've|must've|ain't|I'mma|tryna|dunno|betcha|whatcha|gotcha|whaddya|howdya|didja|wouldja|couldja|hafta|oughta|coulda|woulda|shoulda|mighta|'cause|cuz)\b/gi;
+
+// ── Phrasal verbs — BOTH parts always get blanked together ────────────────
+const PHRASAL=['look up','give up','put on','take off','come on','go on','find out','turn on','turn off','pick up','set up','show up','come back','go back','get up','sit down','stand up','move on','carry on','go ahead','run out','work out','figure out','bring up','keep up','make up','end up','grow up','break down','slow down','calm down','break up','catch up','get over','get through','look after','put away','throw away','get together','get along','watch out','hold on','hang on',
+'wake up','speak up','give in','give back','set out','take up','look into','think about','talk about','care about','worry about','know about','forget about','deal with','come up','come out','go out','take out','put out','check out','try out','point out','leave out','drop out','fall out','burn out','turn out','help out','hand out','stand out','reach out','stick out','wear out','start over','take over','hand over','get over','go over','look over','turn over','think over','talk over','come over','fall over','move over','pull over',
+'fall apart','tear apart','pull apart','take apart',
+'step back','fight back','hold back','pull back','push back','cut back','sit back','turn back','turn around','come around','go around','look around','walk around',
+'get away','run away','walk away','look away','stay away','give away','take away','drive away','pass away',
+'break into','look into','get into','go into','come into','run into','fall into',
+'put up with','come up with','get rid of','look up to','look down on','make fun of',
+'calm down','turn down','let down','write down','bring down','shut down','put down','go down','fall down',
+'sign up','wind up','team up','line up','build up','open up','close up','add up','sum up','give up'];
+
+// ── Words to NEVER blank ─────────────────────────────────────────────────
+const SKIP_WORDS=new Set(['okay','ok','um','uh','hmm','hm','mhm','mmm','ah','oh','ow','hey','hi','bye','yeah','yep','nope','yup','ooh','whoa','wow','aww','aw','ha','haha','mr','mrs','ms','dr','yeah','right','so','well','like','just','i','a','an','the','in','on','at','of','to','and','but','or','for','with','by','from','as','be','it','no','not','get','do','go','if','up','out','all','one','some','this','that','we','they','you','who','what','where','when','how','then','now']);
+
+// ── Common verbs (weight 7) ───────────────────────────────────────────────
+const VERB_LIST=new Set(['make','know','think','come','see','look','want','give','use','tell','ask','feel','try','leave','call','keep','let','begin','show','hear','play','run','move','live','believe','hold','bring','happen','write','sit','stand','lose','pay','meet','continue','learn','change','lead','understand','watch','follow','stop','create','speak','read','spend','grow','open','walk','win','offer','remember','love','consider','appear','buy','wait','serve','send','expect','build','stay','fall','cut','reach','remain','suggest','raise','pass','sell','report','decide','pull','push','turn','start','end','help','need','mean','find','put','take','say','go','got','came','went','took','made','said','felt','knew','thought','saw','heard','left','found','told','showed','brought','kept','held','became','began','grew','led','understood']);
+
+// ── Adjectives (weight 6) ─────────────────────────────────────────────────
+const ADJ_LIST=new Set(['happy','sad','tired','excited','angry','scared','beautiful','ugly','big','small','fast','slow','old','young','good','bad','hard','easy','important','difficult','wonderful','terrible','amazing','awful','great','horrible','fantastic','interesting','boring','funny','serious','simple','complex','different','similar','special','normal','natural','possible','impossible','necessary','ready','sure','clear','true','false','real','free','full','hot','cold','long','short','high','low','new','old','early','late','right','wrong','dark','light','strong','weak','rich','poor','safe','dangerous','healthy','sick','lucky','busy','quiet','loud','nice','kind','mean','smart','stupid','strange','familiar','perfect','terrible','incredible','obvious','typical','common','rare','popular','famous','ordinary','extra','total','sudden','recent','future','past','present']);
 
 function wordWeight(word,cap){
   const lo=word.toLowerCase(),cl=cap.text.toLowerCase();
+
+  // ── Hard skip ────────────────────────────────────────────────────────────
+  if(SKIP_WORDS.has(lo)) return 0;
+  if(/^\d+$/.test(word)) return 0;
+  if(lo.length<=2&&!lo.includes("'")) return 0;
+
+  // Skip proper nouns (capitalized mid-sentence, not after period/comma)
+  if(/^[A-Z]/.test(word)){
+    const idx=cap.text.indexOf(word);
+    if(idx>0&&!/[.!?]\s*$/.test(cap.text.slice(0,idx))) return 0;
+  }
+
   let w=1;
+
+  // ── Contractions & reductions: 10 ───────────────────────────────────────
   CONTRACTIONS.lastIndex=0;
-  if(CONTRACTIONS.test(word)){CONTRACTIONS.lastIndex=0;w=Math.max(w,10);}
-  for(const pv of PHRASAL){if(cl.includes(pv)&&pv.split(' ').some(p=>p===lo))w=Math.max(w,9);}
-  for(const ex of EXPRESSIONS){if(cl.includes(ex)&&ex.includes(lo))w=Math.max(w,8);}
-  if(word.length>=5&&w===1)w=2;
-  if(word.length>=8&&w===2)w=3;
+  if(CONTRACTIONS.test(word)){CONTRACTIONS.lastIndex=0;return 10;}
+
+  // ── Phrasal verb components: 9 ───────────────────────────────────────────
+  for(const pv of PHRASAL){
+    if(cl.includes(pv.toLowerCase())&&pv.split(' ').some(p=>p===lo)){w=Math.max(w,9);break;}
+  }
+
+  // ── Common verbs: 7 ──────────────────────────────────────────────────────
+  if(VERB_LIST.has(lo)) w=Math.max(w,7);
+
+  // ── Verb forms (-ed, -ing that aren't gerunds of skip-words): 6 ──────────
+  if(w<6&&lo.length>4&&/(?:ed|ing)$/.test(lo)&&!SKIP_WORDS.has(lo.replace(/(?:ed|ing)$/,''))) w=Math.max(w,6);
+
+  // ── Adjectives: 6 ────────────────────────────────────────────────────────
+  if(ADJ_LIST.has(lo)) w=Math.max(w,6);
+
+  // ── Adjective suffixes (-ful,-less,-ous,-ive,-able,-ible): 5 ─────────────
+  if(w<5&&lo.length>5&&/(?:ful|less|ous|ive|able|ible|ical)$/.test(lo)) w=Math.max(w,5);
+
+  // ── Adverbs (-ly): 5 ─────────────────────────────────────────────────────
+  if(w<5&&lo.length>4&&/ly$/.test(lo)) w=Math.max(w,5);
+
+  // ── Length fallback for non-trivial words ────────────────────────────────
+  if(w===1){
+    if(lo.length>=7) w=3;
+    else if(lo.length>=5) w=2;
+  }
   return w;
 }
 
 function makeBlanks(caps,pct){
   const candidates=[];
   for(const cap of caps){
-    for(const match of [...cap.text.matchAll(/\b[a-zA-Z']{2,}\b/g)]){
+    for(const match of [...cap.text.matchAll(/\b[a-zA-Z'][a-zA-Z']*\b/g)]){
       const w=match[0];
-      // Skip proper nouns: capitalized words that aren't the first word of the caption
-      if(/^[A-Z]/.test(w)&&match.index>0) continue;
-      candidates.push({cap,word:w,wt:wordWeight(w,cap),pos:match.index});
+      const wt=wordWeight(w,cap);
+      if(wt===0) continue;
+      candidates.push({cap,word:w,wt,pos:match.index});
     }
   }
   candidates.sort((a,b)=>b.wt!==a.wt?b.wt-a.wt:Math.random()-.5);
   const target=Math.max(5,Math.round(candidates.length*pct/100));
-  const chosen=[],capCount=new Map();
+  const chosen=[],chosenKeys=new Set(),capCount=new Map();
+
   for(const c of candidates){
     if(chosen.length>=target) break;
+    const key=`${c.cap.start}:${c.pos}`;
+    if(chosenKeys.has(key)) continue;
     const used=capCount.get(c.cap)||0;
-    const max=Math.ceil(c.cap.text.split(/\s+/).length/4);
-    if(used<max){chosen.push(c);capCount.set(c.cap,used+1);}
+    const capWords=c.cap.text.split(/\s+/).length;
+    const max=Math.ceil(capWords/3); // up to 1/3 of words per caption
+    if(used>=max) continue;
+
+    chosen.push(c); chosenKeys.add(key); capCount.set(c.cap,used+1);
+
+    // ── Phrasal verb: force-add partner word(s) ──────────────────────────
+    if(c.wt>=9){
+      const cl=c.cap.text.toLowerCase();
+      for(const pv of PHRASAL){
+        const pvl=pv.toLowerCase();
+        if(!cl.includes(pvl)) continue;
+        const parts=pv.split(' ');
+        if(!parts.some(p=>p===c.word.toLowerCase())) continue;
+        for(const part of parts){
+          if(part===c.word.toLowerCase()) continue;
+          const re=new RegExp('\\b'+part+'\\b','i');
+          const pm=re.exec(c.cap.text);
+          if(!pm) continue;
+          const pk=`${c.cap.start}:${pm.index}`;
+          if(chosenKeys.has(pk)) continue;
+          chosen.push({cap:c.cap,word:pm[0],wt:9,pos:pm.index});
+          chosenKeys.add(pk); capCount.set(c.cap,(capCount.get(c.cap)||0)+1);
+        }
+        break;
+      }
+    }
   }
   chosen.sort((a,b)=>a.cap.start!==b.cap.start?a.cap.start-b.cap.start:a.pos-b.pos);
   return chosen;
