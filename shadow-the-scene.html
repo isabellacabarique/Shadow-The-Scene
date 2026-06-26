@@ -315,8 +315,8 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-heigh
         <h3>Intermedio</h3><p id="ld-i">Rellenar palabras al azar (25%)</p>
         <div class="licon">😐</div>
       </div>
-      <div class="level-card bg-purple" onclick="pickLevel('advanced',20,4)">
-        <h3>Avanzado</h3><p id="ld-a">Completar frases de 4+ palabras seguidas</p>
+      <div class="level-card bg-purple" onclick="pickLevel('advanced',50,6,18,2)">
+        <h3>Avanzado</h3><p id="ld-a">Frases de 6 palabras · 50% del video · 18 seg · 2 vidas</p>
         <div class="licon">😤</div>
       </div>
       <div class="level-card bg-red"    onclick="pickLevel('expert',100)">
@@ -485,13 +485,13 @@ const S={
   captions:[],blanks:[],
   idx:0,score:0,cor:0,err:0,
   bonus:1,streak:0,
-  timeLeft:30,maxTime:30,
+  timeLeft:30,maxTime:30,initMaxTime:30,
   timerTick:null,answered:false,
   player:null,paused:false,seg:null,
   vimeoIframe:null,vimeoTime:0,vimeoReady:false,
   timerStarted:false,
   sentenceTimer:null,sentenceWatcher:null,blankResults:[],
-  lives:3,
+  lives:3,initLives:3,
 };
 
 function show(id){
@@ -524,7 +524,12 @@ function detect(url){
   return{platform:null,vid:null};
 }
 
-function pickLevel(lvl,pct,phraseLen){S.level=lvl;S.pct=pct;S.phraseLen=phraseLen||1;show('screen-mode');}
+function pickLevel(lvl,pct,phraseLen,maxTime,lives){
+  S.level=lvl;S.pct=pct;S.phraseLen=phraseLen||1;
+  S.initMaxTime=S.maxTime=maxTime||30;
+  S.initLives=lives||3;
+  show('screen-mode');
+}
 
 function updateLevelDescs(total){
   const set=(id,n,p)=>document.getElementById(id).textContent=
@@ -562,7 +567,7 @@ function finishLoad(caps){
   updateLevelDescs(totalWords);
   S.blanks=makeBlanks(caps,S.pct,S.phraseLen);
   if(S.blanks.length===0){show('screen-manual');return;}
-  S.idx=0;S.score=0;S.cor=0;S.err=0;S.bonus=1;S.streak=0;S.lives=3;S.answered=false;S.paused=false;S.vimeoTime=0;S.vimeoReady=false;S.timerStarted=false;updateLives();
+  S.idx=0;S.score=0;S.cor=0;S.err=0;S.bonus=1;S.streak=0;S.lives=S.initLives;S.maxTime=S.initMaxTime;S.timeLeft=S.maxTime;S.answered=false;S.paused=false;S.vimeoTime=0;S.vimeoReady=false;S.timerStarted=false;updateLives();
   S.blankResults=new Array(S.blanks.length).fill(null);
   show('screen-game');
   initPlayer();
@@ -1523,7 +1528,7 @@ function endGame(){
 }
 
 function restart(){
-  S.idx=0;S.score=0;S.cor=0;S.err=0;S.bonus=1;S.streak=0;S.lives=3;S.answered=false;S.paused=false;S.vimeoTime=0;S.vimeoReady=false;S.timerStarted=false;updateLives();
+  S.idx=0;S.score=0;S.cor=0;S.err=0;S.bonus=1;S.streak=0;S.lives=S.initLives;S.maxTime=S.initMaxTime;S.timeLeft=S.maxTime;S.answered=false;S.paused=false;S.vimeoTime=0;S.vimeoReady=false;S.timerStarted=false;updateLives();
   S.blanks=makeBlanks(S.captions,S.pct,S.phraseLen);
   S.blankResults=new Array(S.blanks.length).fill(null);
   show('screen-game');initPlayer();
