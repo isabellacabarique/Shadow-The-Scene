@@ -52,6 +52,20 @@ def index():
     return send_from_directory(str(folder), "shadow-the-scene.html")
 
 
+@app.route("/report-error", methods=["POST"])
+def report_error():
+    import json as _json
+    data = request.get_json(silent=True) or {}
+    print("\n" + "⚠️  " + "─" * 48)
+    print("  🚩  ERROR REPORTADO POR ESTUDIANTE")
+    print(f"  📹  Video   : {data.get('url','—')}")
+    print(f"  📝  Oración : {data.get('sentence','—')}")
+    print(f"  🔤  Esperado: {', '.join(data.get('expected',[]))}")
+    print(f"  🕐  Hora    : {data.get('timestamp','—')}")
+    print("─" * 52 + "\n")
+    return jsonify({"ok": True})
+
+
 @app.route("/vimeo-captions")
 def vimeo_captions():
     vid   = request.args.get("v", "").strip()

@@ -147,6 +147,10 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-heigh
   transition:opacity .15s;}
 .btn-continue:hover{opacity:.85;}
 .lives-display{font-size:1.1rem;letter-spacing:1px;}
+.btn-report{background:none;border:none;color:rgba(255,255,255,.3);font-size:.72rem;
+  cursor:pointer;padding:3px 6px;border-radius:6px;transition:all .2s;align-self:flex-end;margin-top:4px;}
+.btn-report:hover{color:#ef9a9a;}
+.btn-report.sent{color:#66bb6a;cursor:default;}
 .fb{text-align:center;font-size:1rem;font-weight:600;padding:10px;border-radius:8px;display:none;}
 .fb.ok {background:rgba(76,175,80,.25);color:#a5d6a7;display:block;}
 .fb.bad{background:rgba(229,57,53,.25);color:#ef9a9a;display:block;}
@@ -974,6 +978,33 @@ function scheduleSentencePause(cap){
     if(!S.answered&&!S.paused) pausePlay();
   },dur);
 }
+function makeReportBtn(){
+  const btn=document.createElement('button');
+  btn.className='btn-report';
+  btn.textContent='🚩 Reportar error en esta oración';
+  btn.onclick=()=>{
+    if(btn.classList.contains('sent')) return;
+    const group=sentenceGroup(S.idx);
+    const expected=group.map(bi=>S.blanks[bi].word);
+    const payload={
+      url:S.url,
+      sentence:S.seg?.cap?.text||'',
+      expected,
+      timestamp:new Date().toISOString()
+    };
+    // Try server endpoint first (works locally and on Railway)
+    fetch('/report-error',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
+      .catch(()=>{
+        // Fallback: open email draft with all info pre-filled
+        const body=`Error en Shadow the Scene\n\nVideo: ${payload.url}\nOración: ${payload.sentence}\nPalabras esperadas: ${expected.join(', ')}\nFecha: ${payload.timestamp}`;
+        window.open(`mailto:isabellacabarique@gmail.com?subject=Error%20Shadow%20the%20Scene&body=${encodeURIComponent(body)}`);
+      });
+    btn.textContent='✓ Reportado';
+    btn.classList.add('sent');
+  };
+  return btn;
+}
+
 function replaySeg(){
   if(!S.seg)return;
   clearTimer();
@@ -1069,6 +1100,7 @@ function setupTypGroup(group){
   replay.className='btn-replay'; replay.innerHTML='🔁 Repetir audio';
   replay.onclick=replaySeg;
   panel.appendChild(replay);
+  panel.appendChild(makeReportBtn());
 
   setTimeout(()=>document.getElementById('typ-in-0')?.focus(),80);
 }
@@ -1128,6 +1160,7 @@ function setupSelGroup(group){
   replay.className='btn-replay'; replay.innerHTML='🔁 Repetir audio';
   replay.onclick=replaySeg;
   panel.appendChild(replay);
+  panel.appendChild(makeReportBtn());
 }
 
 function submitSelGroup(group){
