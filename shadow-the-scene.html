@@ -30,7 +30,7 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-heigh
 
 /* ── URL SCREEN ── */
 .url-card{background:rgba(30,53,100,.82);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
-  border-radius:24px;padding:80px 80px;max-width:1000px;
+  border-radius:24px;padding:52px 56px;max-width:680px;
   width:100%;box-shadow:0 24px 72px rgba(0,0,0,.5);text-align:center;
   border:1px solid rgba(255,255,255,.1);}
 .logo{font-size:4rem;margin-bottom:14px;}
@@ -174,8 +174,8 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-heigh
 .timer-track{height:6px;background:rgba(255,255,255,.1);}
 .timer-fill{height:100%;background:#ff4444;transition:width .1s linear;}
 .game-body{display:flex;flex:1;min-height:0;}
-.video-col{flex:2;max-width:65%;background:#000;display:flex;flex-direction:column;min-height:280px;}
-#yt-player{width:100%;aspect-ratio:16/9;flex-shrink:0;}
+.video-col{flex:2;background:#000;display:flex;align-items:center;justify-content:center;min-height:280px;}
+#yt-player{width:100%;aspect-ratio:16/9;}
 .answer-col{flex:1;min-width:270px;background:var(--card);
   display:flex;flex-direction:column;gap:10px;padding:18px;
   justify-content:flex-start;overflow-y:auto;}
@@ -262,9 +262,13 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-heigh
 
 <!-- ══ SCREEN 1: URL ══ -->
 <div id="screen-url" class="screen active">
+  <!-- Barra superior izquierda -->
+  <div class="brand-bar">
+    <span class="brand-bar-title">Listening Lab &nbsp;|&nbsp; <span>Shadow the Scene</span></span>
+  </div>
   <div class="center">
     <div class="url-card">
-      <!-- Logo academia solo en página principal -->
+      <!-- Logo academia -->
       <div style="display:flex;flex-direction:column;align-items:center;margin-bottom:24px;">
         <div style="display:flex;align-items:center;gap:9px;line-height:1;">
           <div style="display:flex;gap:4px;">
@@ -278,7 +282,7 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-heigh
       </div>
       <div class="logo">🎧</div>
       <h1>Shadow the Scene</h1>
-      <p style="font-family:'Nunito',sans-serif;font-size:.72rem;font-weight:400;color:rgba(255,255,255,.4);letter-spacing:.14em;text-transform:uppercase;margin-bottom:6px;">Listening Lab &nbsp;|&nbsp; Shadow the Scene</p>
+      <p style="font-family:'Nunito',sans-serif;font-size:.72rem;font-weight:400;color:rgba(255,255,255,.45);letter-spacing:.18em;text-transform:uppercase;margin-bottom:6px;">Listening Lab</p>
       <p>Mejora tu inglés con videos reales</p>
       <div class="url-row">
         <input id="url-input" class="url-input" type="text"
@@ -286,7 +290,6 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-heigh
       </div>
       <button class="btn-primary" style="width:100%" onclick="handleUrl()">▶ Comenzar Actividad</button>
       <div id="url-error" class="url-error"></div>
-      <p style="margin-top:18px;font-size:.75rem;color:rgba(255,255,255,.35);letter-spacing:.08em;">by Immersa Academy</p>
     </div>
   </div>
 </div>
@@ -430,10 +433,7 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-heigh
   </div>
   <div class="timer-track"><div class="timer-fill" id="timer-fill" style="width:100%"></div></div>
   <div class="game-body">
-    <div class="video-col">
-      <div id="yt-player"></div>
-      <div class="sentence-bar" id="sentence-bar">…</div>
-    </div>
+    <div class="video-col"><div id="yt-player"></div></div>
     <!-- Selection -->
     <div class="answer-col" id="sel-panel" style="display:none">
       <div class="fb" id="fb-sel"></div>
@@ -450,6 +450,7 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-heigh
       <button class="btn-replay" onclick="replaySeg()">🔁 Repetir audio</button>
     </div>
   </div>
+  <div class="sentence-bar" id="sentence-bar">…</div>
   <div class="nav-bar">
     <button class="nav-btn" onclick="prevBlank()">⟵</button>
     <span id="blank-prog">1 / 1</span>
