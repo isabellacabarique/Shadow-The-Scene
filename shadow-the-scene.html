@@ -1392,32 +1392,37 @@ function setupSelGroup(group){
 
 function setupSelOptionsBar(group){
   const bar=document.getElementById('sel-options-bar');
-  bar.style.display='flex'; bar.innerHTML='';
   S._selAnswers=new Array(group.length).fill(null);
-  group.forEach((blankIdx,gi)=>{
+
+  function showOpts(gi){
+    bar.innerHTML=''; bar.style.display='flex';
+    const blankIdx=group[gi];
     const b=S.blanks[blankIdx];
     const opts=[b.word,...distractors(b.word,S.captions)].sort(()=>Math.random()-.5);
+    // Progress label when multiple blanks
     if(group.length>1){
       const lbl=document.createElement('div');
-      lbl.style.cssText='width:100%;color:var(--light);font-size:.78rem;margin-top:4px;font-weight:600';
-      lbl.textContent=`Hueco ${gi+1}:`;
+      lbl.style.cssText='width:100%;color:var(--light);font-size:.8rem;font-weight:600;margin-bottom:2px;';
+      lbl.textContent=`Espacio ${gi+1} de ${group.length}`;
       bar.appendChild(lbl);
     }
     opts.forEach(o=>{
       const btn=document.createElement('button');
       btn.className='sel-opt-btn';
       btn.textContent=o;
-      btn.dataset.grp=gi;
       btn.onclick=()=>{
         if(S.answered) return;
-        bar.querySelectorAll(`.sel-opt-btn[data-grp="${gi}"]`).forEach(x=>x.style.background='');
-        btn.style.background='#2d4d8a';
         S._selAnswers[gi]={given:o,correct:b.word,blankIdx};
-        if(S._selAnswers.every(a=>a!==null)) setTimeout(()=>submitSelInline(group),300);
+        // Show chosen word in the blank span
+        const span=document.getElementById(`iblk-${blankIdx}`);
+        if(span){span.textContent=o;span.style.color='#90caf9';span.style.borderBottomColor='#4c8eff';}
+        if(gi+1<group.length) setTimeout(()=>showOpts(gi+1),180);
+        else setTimeout(()=>submitSelInline(group),300);
       };
       bar.appendChild(btn);
     });
-  });
+  }
+  showOpts(0);
 }
 
 function submitSelInline(group){
