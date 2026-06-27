@@ -439,19 +439,19 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-heigh
       <div class="level-header" style="padding:0;">Selecciona un Nivel</div>
     </div>
     <div class="level-grid">
-      <div class="level-card bg-green"  onclick="pickLevel('beginner',10)">
-        <h3>Principiante</h3><p id="ld-b">Rellenar palabras al azar (10%)</p>
+      <div class="level-card bg-green"  onclick="pickLevel('beginner',0,1,30,3,true,70)">
+        <h3>Principiante</h3><p id="ld-b">70% de cada oración visible · 30 seg · 3 vidas</p>
         <div class="licon">😊</div>
       </div>
-      <div class="level-card bg-orange" onclick="pickLevel('intermediate',25)">
-        <h3>Intermedio</h3><p id="ld-i">Rellenar palabras al azar (25%)</p>
+      <div class="level-card bg-orange" onclick="pickLevel('intermediate',0,1,25,3,true,50)">
+        <h3>Intermedio</h3><p id="ld-i">50% de cada oración visible · 25 seg · 3 vidas</p>
         <div class="licon">😐</div>
       </div>
-      <div class="level-card bg-purple" onclick="pickLevel('advanced',50,6,18,2)">
-        <h3>Avanzado</h3><p id="ld-a">Frases de 6 palabras · 50% del video · 18 seg · 2 vidas</p>
+      <div class="level-card bg-purple" onclick="pickLevel('advanced',0,1,20,2,true,30)">
+        <h3>Avanzado</h3><p id="ld-a">30% de cada oración visible · 20 seg · 2 vidas</p>
         <div class="licon">😤</div>
       </div>
-      <div class="level-card bg-red" onclick="pickLevel('expert',100,1,20,1,true)">
+      <div class="level-card bg-red" onclick="pickLevel('expert',0,1,20,1,true,0)">
         <h3>Experto</h3><p>Solo las primeras palabras visibles · 20 seg · 1 vida</p>
         <div class="licon">😵</div>
       </div>
@@ -608,7 +608,7 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-heigh
 <script>
 const S={
   url:'',vid:'',platform:'',hash:null,
-  level:'',pct:10,phraseLen:1,mode:'selection',blankAll:false,
+  level:'',pct:10,phraseLen:1,mode:'selection',blankAll:false,showPct:0,
   captions:[],blanks:[],
   idx:0,score:0,cor:0,err:0,
   bonus:1,streak:0,
@@ -651,11 +651,12 @@ function detect(url){
   return{platform:null,vid:null};
 }
 
-function pickLevel(lvl,pct,phraseLen,maxTime,lives,blankAll){
+function pickLevel(lvl,pct,phraseLen,maxTime,lives,blankAll,showPct){
   S.level=lvl;S.pct=pct;S.phraseLen=phraseLen||1;
   S.initMaxTime=S.maxTime=maxTime||30;
   S.initLives=lives||3;
   S.blankAll=!!blankAll;
+  S.showPct=showPct||0;
   show('screen-mode');
 }
 
@@ -1050,10 +1051,7 @@ function makeBlanks(caps,pct,phraseLen){
       .map(({cap})=>({cap,word:cap.text,wt:10,pos:0,fullSentence:true}));
   }
 
-  // ── Advanced mode: keep only opening function words visible ─────────────────
-  // Rule: show the first word + any consecutive SKIP_WORDS that follow it.
-  // Everything else (including "at", "the", "these" mid-sentence) is blank.
-  // Proper nouns (names of people/places) are always visible.
+  // ── blankAll modes: advanced (show first 30%) and expert (show opening words) ─
   if(S.blankAll){
     const result=[];
     for(const cap of caps){
@@ -1063,16 +1061,21 @@ function makeBlanks(caps,pct,phraseLen){
 
       const visiblePos=new Set();
 
-      // Always show the first word as a starting anchor
-      visiblePos.add(words[0].pos);
-      // Keep any additional consecutive skip words right after the first
-      let wi=1;
-      while(wi<words.length && SKIP_WORDS.has(words[wi].word.toLowerCase())){
-        visiblePos.add(words[wi].pos);
-        wi++;
+      if(S.showPct>0){
+        // Advanced: show first showPct% of words in each caption
+        const showN=Math.max(1,Math.round(words.length*S.showPct/100));
+        words.slice(0,showN).forEach(w=>visiblePos.add(w.pos));
+      } else {
+        // Expert: show first word + consecutive skip words after it
+        visiblePos.add(words[0].pos);
+        let wi=1;
+        while(wi<words.length&&SKIP_WORDS.has(words[wi].word.toLowerCase())){
+          visiblePos.add(words[wi].pos);
+          wi++;
+        }
       }
 
-      // Proper nouns (capitalized mid-sentence) always visible
+      // Proper nouns (names of people/places) always visible
       words.forEach(({word,pos})=>{
         if(/^[A-Z]/.test(word)&&pos>0&&!/[.!?]\s*$/.test(cap.text.slice(0,pos)))
           visiblePos.add(pos);
