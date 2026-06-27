@@ -447,8 +447,8 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-heigh
         <h3>Intermedio</h3><p id="ld-i">Rellenar palabras al azar (25%)</p>
         <div class="licon">😐</div>
       </div>
-      <div class="level-card bg-purple" onclick="pickLevel('advanced',75,6,20,2)">
-        <h3>Avanzado</h3><p id="ld-a">La mayoría de palabras ocultas · 75% del video · 20 seg · 2 vidas</p>
+      <div class="level-card bg-purple" onclick="pickLevel('advanced',90,6,20,2)">
+        <h3>Avanzado</h3><p id="ld-a">La mayoría de palabras ocultas · 20 seg · 2 vidas</p>
         <div class="licon">😤</div>
       </div>
       <div class="level-card bg-red"    onclick="pickLevel('expert',100)">
@@ -1069,7 +1069,8 @@ function makeBlanks(caps,pct,phraseLen){
     if(chosenKeys.has(key)) continue;
     const used=capCount.get(c.cap)||0;
     const capWords=c.cap.text.split(/\s+/).length;
-    const max=Math.ceil(capWords/(phraseLen>1?phraseLen:3));
+    // For phrase mode: allow more anchors (÷3 instead of ÷phraseLen) for denser coverage
+    const max=phraseLen>1?Math.ceil(capWords/3):Math.ceil(capWords/3);
     if(used>=max) continue;
     chosen.push(c); chosenKeys.add(key); capCount.set(c.cap,used+1);
 
