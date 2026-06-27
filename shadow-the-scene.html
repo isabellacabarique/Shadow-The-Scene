@@ -176,8 +176,8 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-heigh
 .timer-track{height:6px;background:rgba(255,255,255,.1);}
 .timer-fill{height:100%;background:#ff4444;transition:width .1s linear;}
 .game-body{display:flex;flex:1;min-height:0;}
-.video-col{flex:2;background:#000;display:flex;align-items:center;justify-content:center;min-height:280px;}
-#yt-player{width:100%;aspect-ratio:16/9;}
+.video-col{flex:none;background:#000;display:flex;align-items:center;justify-content:center;}
+#yt-player{width:100%;max-height:38vh;aspect-ratio:16/9;}
 .answer-col{flex:1;min-width:270px;background:var(--card);
   display:flex;flex-direction:column;gap:10px;padding:18px;
   justify-content:flex-start;overflow-y:auto;}
@@ -1496,8 +1496,8 @@ function renderCap(cap,activeIdx,isCurrent){
         html+=`<span class="filled-wrong">${escHtml(seg.result.correct)}</span>`;
       }
     }else if(seg.isActive&&S.mode==='typing'){
-      const w=Math.max(52,seg.word.length*11);
-      html+=`<input class="inline-blank" id="iblk-${seg.idx}" data-bi="${seg.idx}" style="width:${w}px" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">`;
+      const w=Math.max(5,seg.word.length+3);
+      html+=`<input class="inline-blank" id="iblk-${seg.idx}" data-bi="${seg.idx}" style="width:${w}ch" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">`;
     }else if(seg.isActive&&S.mode==='selection'){
       html+=`<span class="blank-sel" id="iblk-${seg.idx}" data-bi="${seg.idx}">${'_'.repeat(Math.max(4,seg.word.length))}</span>`;
     }else{
