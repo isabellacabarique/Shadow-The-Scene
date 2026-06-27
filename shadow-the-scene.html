@@ -245,6 +245,61 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-heigh
 .btn-again{background:linear-gradient(135deg,#4c8eff,#9c27b0);color:#fff;}
 .btn-home {background:rgba(255,255,255,.1);color:#fff;}
 
+/* ── INLINE BLANK INPUT ── */
+.inline-blank{
+  display:inline-block;vertical-align:baseline;
+  background:rgba(76,142,255,.12);
+  border:none;border-bottom:2.5px solid #4c8eff;
+  color:#fff;font-family:'Montserrat',sans-serif;font-size:inherit;font-weight:500;
+  padding:1px 6px;border-radius:4px 4px 0 0;outline:none;
+  min-width:44px;transition:border-color .15s,background .15s;
+  text-align:center;
+}
+.inline-blank:focus{background:rgba(76,142,255,.22);border-color:#64b5f6;}
+.inline-blank.ok{border-color:#66bb6a;color:#a5d6a7;background:rgba(76,175,80,.15);}
+.inline-blank.bad{border-color:#64b5f6;color:#64b5f6;background:rgba(76,142,255,.1);}
+.inline-blank:disabled{cursor:default;}
+
+/* ── INLINE BLANK (SELECTION) ── */
+.blank-sel{
+  color:#4c8eff;font-weight:700;border-bottom:2px dashed #4c8eff;
+  padding:0 5px;cursor:pointer;
+}
+
+/* ── GAME CONTROLS (below video) ── */
+.game-controls{
+  display:flex;align-items:center;gap:10px;
+  padding:8px 18px;background:rgba(0,0,0,.18);
+  border-top:1px solid rgba(255,255,255,.05);
+  flex-wrap:wrap;
+}
+
+/* ── SELECTION OPTIONS BAR ── */
+.sel-options-bar{
+  display:flex;flex-wrap:wrap;gap:8px;
+  padding:12px 18px;background:rgba(0,0,0,.18);
+  border-top:1px solid rgba(255,255,255,.05);
+}
+.sel-opt-btn{
+  padding:11px 20px;border-radius:10px;
+  border:1.5px solid rgba(255,255,255,.18);
+  background:var(--card2);color:#fff;font-size:1rem;
+  cursor:pointer;transition:all .15s;
+  flex:1;min-width:110px;text-align:center;
+}
+.sel-opt-btn:hover:not(:disabled){background:#2d4d8a;border-color:#4c8eff;}
+.sel-opt-btn.ok{background:#2e7d32!important;border-color:#4caf50!important;}
+.sel-opt-btn.bad{background:#b71c1c!important;border-color:#e53935!important;}
+.sel-opt-btn:disabled{opacity:.75;cursor:default;}
+
+/* ── INLINE FEEDBACK ── */
+.inline-fb{
+  text-align:center;font-size:.9rem;font-weight:600;
+  padding:7px 18px;
+}
+.inline-fb.ok{color:#a5d6a7;}
+.inline-fb.bad{color:#ef9a9a;}
+
 /* ── HOME BACKGROUND ── */
 #screen-url{
   background:url('fondo.png') center center / cover no-repeat;
@@ -505,23 +560,18 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-heigh
   <div class="timer-track"><div class="timer-fill" id="timer-fill" style="width:100%"></div></div>
   <div class="game-body">
     <div class="video-col"><div id="yt-player"></div></div>
-    <!-- Selection -->
-    <div class="answer-col" id="sel-panel" style="display:none">
-      <div class="fb" id="fb-sel"></div>
-      <div id="opts"></div>
-      <button class="btn-replay" onclick="replaySeg()">🔁 Repetir audio</button>
-    </div>
-    <!-- Typing -->
-    <div class="answer-col" id="typ-panel" style="display:none">
-      <p style="color:var(--light);font-size:.88rem">Escribe la palabra o frase que falta:</p>
-      <input id="typ-in" class="type-input" placeholder="tu respuesta…"
-        onkeydown="if(event.key==='Enter')submitTyping()" />
-      <button class="btn-confirm" onclick="submitTyping()">Confirmar ✓</button>
-      <div class="fb" id="fb-typ"></div>
-      <button class="btn-replay" onclick="replaySeg()">🔁 Repetir audio</button>
-    </div>
   </div>
+  <!-- Controls below video -->
+  <div class="game-controls" id="game-controls">
+    <button class="btn-replay" onclick="replaySeg()">🔁 Repetir audio</button>
+    <button class="btn-report" id="report-btn" onclick="reportError()">🚩 Reportar error</button>
+  </div>
+  <!-- Transcript with inline blanks -->
   <div class="sentence-bar" id="sentence-bar">…</div>
+  <!-- Options bar (selection mode only) -->
+  <div class="sel-options-bar" id="sel-options-bar" style="display:none"></div>
+  <!-- Inline feedback -->
+  <div class="inline-fb" id="inline-fb" style="display:none"></div>
   <div class="nav-bar">
     <button class="nav-btn" onclick="prevBlank()">⟵</button>
     <span id="blank-prog">1 / 1</span>
@@ -1192,31 +1242,23 @@ function scheduleSentencePause(cap){
     if(!S.answered&&!S.paused) pausePlay();
   },dur);
 }
+function reportError(){
+  const btn=document.getElementById('report-btn');
+  if(btn?.classList.contains('sent')) return;
+  const group=sentenceGroup(S.idx);
+  const expected=group.map(bi=>S.blanks[bi].word);
+  const payload={url:S.url,sentence:S.seg?.cap?.text||'',expected,timestamp:new Date().toISOString()};
+  fetch('/report-error',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
+    .catch(()=>{
+      const body=`Error en Shadow the Scene\n\nVideo: ${payload.url}\nOración: ${payload.sentence}\nPalabras esperadas: ${expected.join(', ')}\nFecha: ${payload.timestamp}`;
+      window.open(`mailto:isabellacabarique@gmail.com?subject=Error%20Shadow%20the%20Scene&body=${encodeURIComponent(body)}`);
+    });
+  if(btn){btn.textContent='✓ Reportado';btn.classList.add('sent');}
+}
+
 function makeReportBtn(){
-  const btn=document.createElement('button');
-  btn.className='btn-report';
-  btn.textContent='🚩 Reportar error en esta oración';
-  btn.onclick=()=>{
-    if(btn.classList.contains('sent')) return;
-    const group=sentenceGroup(S.idx);
-    const expected=group.map(bi=>S.blanks[bi].word);
-    const payload={
-      url:S.url,
-      sentence:S.seg?.cap?.text||'',
-      expected,
-      timestamp:new Date().toISOString()
-    };
-    // Try server endpoint first (works locally and on Railway)
-    fetch('/report-error',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
-      .catch(()=>{
-        // Fallback: open email draft with all info pre-filled
-        const body=`Error en Shadow the Scene\n\nVideo: ${payload.url}\nOración: ${payload.sentence}\nPalabras esperadas: ${expected.join(', ')}\nFecha: ${payload.timestamp}`;
-        window.open(`mailto:isabellacabarique@gmail.com?subject=Error%20Shadow%20the%20Scene&body=${encodeURIComponent(body)}`);
-      });
-    btn.textContent='✓ Reportado';
-    btn.classList.add('sent');
-  };
-  return btn;
+  // Legacy stub — report button is now static in game-controls
+  return document.createElement('span');
 }
 
 function replaySeg(){
@@ -1251,6 +1293,11 @@ function showBlank(idx){
   document.getElementById('blank-prog').textContent=prog;
   document.getElementById('g-blanks').textContent=prog.replace(' ','');
   clearFb();
+  // Reset report button
+  const rb=document.getElementById('report-btn');
+  if(rb){rb.textContent='🚩 Reportar error';rb.classList.remove('sent');}
+  // Hide sel-options-bar between blanks (rebuilt by setupSelOptionsBar)
+  document.getElementById('sel-options-bar').style.display='none';
 
   if(S.mode==='selection') setupSelGroup(group);
   else setupTypGroup(group);
@@ -1270,134 +1317,112 @@ function showBlank(idx){
 }
 
 function setupTypGroup(group){
-  document.getElementById('sel-panel').style.display='none';
-  const panel=document.getElementById('typ-panel');
-  panel.style.display='flex'; panel.innerHTML='';
-
-  const intro=document.createElement('p');
-  intro.style.cssText='color:var(--light);font-size:.88rem';
-  intro.textContent=group.length===1?'Escribe la palabra que falta:':`Escribe las ${group.length} palabras que faltan:`;
-  panel.appendChild(intro);
-
-  group.forEach((blankIdx,i)=>{
-    const wrap=document.createElement('div');
-    wrap.style.cssText='display:flex;align-items:center;gap:8px';
-    if(group.length>1){
-      const lbl=document.createElement('span');
-      lbl.style.cssText='color:#64b5f6;font-size:.82rem;min-width:22px;font-weight:700';
-      lbl.textContent=`${i+1}.`;
-      wrap.appendChild(lbl);
-    }
-    const inp=document.createElement('input');
-    inp.id=`typ-in-${i}`; inp.className='type-input'; inp.style.flex='1';
-    inp.placeholder=group.length===1?'tu respuesta…':`palabra ${i+1}…`;
-    inp.addEventListener('keydown',e=>{
-      if(e.key==='Enter'){
-        if(i<group.length-1) document.getElementById(`typ-in-${i+1}`)?.focus();
-        else submitTypGroup(group);
-      }
-    });
-    wrap.appendChild(inp);
-    panel.appendChild(wrap);
-  });
-
-  const btn=document.createElement('button');
-  btn.className='btn-confirm'; btn.textContent='Confirmar ✓';
-  btn.onclick=()=>submitTypGroup(group);
-  panel.appendChild(btn);
-
-  const fb=document.createElement('div');
-  fb.className='fb'; fb.id='fb-typ';
-  panel.appendChild(fb);
-
-  const replay=document.createElement('button');
-  replay.className='btn-replay'; replay.innerHTML='🔁 Repetir audio';
-  replay.onclick=replaySeg;
-  panel.appendChild(replay);
-  panel.appendChild(makeReportBtn());
-
-  setTimeout(()=>document.getElementById('typ-in-0')?.focus(),80);
-}
-
-function submitTypGroup(group){
-  if(S.answered) return;
-  const results=group.map((blankIdx,i)=>{
-    const given=(document.getElementById(`typ-in-${i}`)?.value||'').trim();
-    const correct=S.blanks[blankIdx].word;
-    return{blankIdx,given,correct,ok:norm(given)===norm(correct)};
-  });
-  if(results.some(r=>!r.given)) return;
-  S.answered=true; clearTimer(); clearSentenceTimer();
-  applyGroupResult(results,'fb-typ');
+  // Typing: inputs are rendered inline in sentence-bar by buildSentenceBar/renderCap
+  // Just focus the first inline input
+  setTimeout(()=>document.getElementById(`iblk-${group[0]}`)?.focus(),80);
 }
 
 function setupSelGroup(group){
-  document.getElementById('typ-panel').style.display='none';
-  const panel=document.getElementById('sel-panel');
-  panel.style.display='flex'; panel.innerHTML='';
-  S._selAnswers=new Array(group.length).fill(null);
+  // Selection: populate the options bar below the sentence
+  setupSelOptionsBar(group);
+}
 
-  group.forEach((blankIdx,i)=>{
+function setupSelOptionsBar(group){
+  const bar=document.getElementById('sel-options-bar');
+  bar.style.display='flex'; bar.innerHTML='';
+  S._selAnswers=new Array(group.length).fill(null);
+  group.forEach((blankIdx,gi)=>{
     const b=S.blanks[blankIdx];
     const opts=[b.word,...distractors(b.word,S.captions)].sort(()=>Math.random()-.5);
     if(group.length>1){
-      const lbl=document.createElement('p');
-      lbl.style.cssText=`color:var(--light);font-size:.82rem;margin-bottom:2px;margin-top:${i>0?'8px':'0'}`;
-      lbl.textContent=`${i+1}. Selecciona:`;
-      panel.appendChild(lbl);
+      const lbl=document.createElement('div');
+      lbl.style.cssText='width:100%;color:var(--light);font-size:.78rem;margin-top:4px;font-weight:600';
+      lbl.textContent=`Hueco ${gi+1}:`;
+      bar.appendChild(lbl);
     }
-    const wrap=document.createElement('div');
-    wrap.id=`opts-group-${i}`;
-    wrap.style.cssText=`display:flex;flex-direction:column;gap:${group.length>1?'4':'6'}px`;
     opts.forEach(o=>{
       const btn=document.createElement('button');
-      btn.className='opt-btn';
-      if(group.length>1) btn.style.padding='10px 14px';
+      btn.className='sel-opt-btn';
       btn.textContent=o;
+      btn.dataset.grp=gi;
       btn.onclick=()=>{
         if(S.answered) return;
-        wrap.querySelectorAll('.opt-btn').forEach(x=>{x.style.background='';delete x.dataset.selected;});
-        btn.style.background='#2d4d8a'; btn.dataset.selected='true';
-        S._selAnswers[i]={given:o,correct:b.word,blankIdx};
-        if(S._selAnswers.every(a=>a!==null)) setTimeout(()=>submitSelGroup(group),300);
+        bar.querySelectorAll(`.sel-opt-btn[data-grp="${gi}"]`).forEach(x=>x.style.background='');
+        btn.style.background='#2d4d8a';
+        S._selAnswers[gi]={given:o,correct:b.word,blankIdx};
+        if(S._selAnswers.every(a=>a!==null)) setTimeout(()=>submitSelInline(group),300);
       };
-      wrap.appendChild(btn);
+      bar.appendChild(btn);
     });
-    panel.appendChild(wrap);
   });
-
-  const fb=document.createElement('div');
-  fb.className='fb'; fb.id='fb-sel';
-  panel.appendChild(fb);
-
-  const replay=document.createElement('button');
-  replay.className='btn-replay'; replay.innerHTML='🔁 Repetir audio';
-  replay.onclick=replaySeg;
-  panel.appendChild(replay);
-  panel.appendChild(makeReportBtn());
 }
 
-function submitSelGroup(group){
+function submitSelInline(group){
   if(S.answered) return;
   S.answered=true; clearTimer(); clearSentenceTimer();
   const results=S._selAnswers.map((a,i)=>{
     if(!a){const bi=group[i];return{blankIdx:bi,given:'',correct:S.blanks[bi].word,ok:false};}
     return{...a,ok:norm(a.given)===norm(a.correct)};
   });
-  group.forEach((blankIdx,i)=>{
-    const wrap=document.getElementById(`opts-group-${i}`);
-    if(!wrap) return;
+  // Color the option buttons
+  const bar=document.getElementById('sel-options-bar');
+  group.forEach((blankIdx,gi)=>{
     const correct=S.blanks[blankIdx].word;
-    wrap.querySelectorAll('.opt-btn').forEach(btn=>{
-      btn.disabled=true; btn.style.opacity='.65';
-      if(norm(btn.textContent)===norm(correct)){btn.classList.add('ok');btn.style.opacity='1';}
-      else if(btn.dataset.selected==='true') btn.classList.add('bad');
+    bar.querySelectorAll(`.sel-opt-btn[data-grp="${gi}"]`).forEach(btn=>{
+      btn.disabled=true;
+      if(norm(btn.textContent)===norm(correct)) btn.classList.add('ok');
+      else if(S._selAnswers[gi]?.given===btn.textContent) btn.classList.add('bad');
     });
   });
-  applyGroupResult(results,'fb-sel');
+  // Fill inline blank spans with selected or correct word
+  results.forEach(r=>{
+    const span=document.getElementById(`iblk-${r.blankIdx}`);
+    if(span){span.textContent=r.ok?r.correct:r.correct;span.style.color=r.ok?'#a5d6a7':'#64b5f6';span.style.borderBottomColor=r.ok?'#66bb6a':'#4c8eff';}
+  });
+  applyGroupResult(results);
 }
 
-function applyGroupResult(results,fbId){
+function attachInlineInputs(activeIdx){
+  if(S.answered) return;
+  const group=sentenceGroup(activeIdx);
+  // Hide sel-options-bar if typing mode
+  if(S.mode==='typing') document.getElementById('sel-options-bar').style.display='none';
+  group.forEach((bi,i)=>{
+    const inp=document.getElementById(`iblk-${bi}`);
+    if(!inp) return;
+    inp.addEventListener('keydown',e=>{
+      if(e.key==='Enter'){
+        e.preventDefault();
+        if(i<group.length-1) document.getElementById(`iblk-${group[i+1]}`)?.focus();
+        else submitInlineTyping(group);
+      }
+    });
+  });
+}
+
+function submitInlineTyping(group){
+  if(S.answered) return;
+  const results=group.map((blankIdx,i)=>{
+    const inp=document.getElementById(`iblk-${blankIdx}`);
+    const given=(inp?.value||'').trim();
+    const correct=S.blanks[blankIdx].word;
+    return{blankIdx,given,correct,ok:norm(given)===norm(correct)};
+  });
+  if(results.some(r=>!r.given)) return;
+  S.answered=true; clearTimer(); clearSentenceTimer();
+  // Show inline feedback on inputs
+  results.forEach(r=>{
+    const inp=document.getElementById(`iblk-${r.blankIdx}`);
+    if(inp){
+      if(!r.ok) inp.value=r.correct;
+      inp.disabled=true;
+      inp.classList.add(r.ok?'ok':'bad');
+    }
+  });
+  applyGroupResult(results);
+}
+
+function applyGroupResult(results){
   const tb=Math.round((S.timeLeft/S.maxTime)*50);
   let totalPts=0;
   results.forEach(r=>{
@@ -1408,26 +1433,31 @@ function applyGroupResult(results,fbId){
     }else{S.err++;S.streak=0;S.bonus=1;}
   });
   S.idx=results[results.length-1].blankIdx;
-  buildSentenceBar(results[0].blankIdx);
+  refreshStats();
   const allOk=results.every(r=>r.ok);
+  const nextIdx=results[results.length-1].blankIdx+1;
+  // Show brief inline feedback
+  const fbEl=document.getElementById('inline-fb');
   if(allOk){
-    setFb(fbId,true,`¡Correcto! +${totalPts} pts`);
+    fbEl.className='inline-fb ok'; fbEl.textContent=`✓ +${totalPts} pts`; fbEl.style.display='block';
   }else{
     const wrong=results.filter(r=>!r.ok).map(r=>`"${r.correct}"`).join(', ');
-    setFb(fbId,false,results.some(r=>r.ok)?`Casi. Era: ${wrong}`:`Incorrecto. Era: ${wrong}`);
+    fbEl.className='inline-fb bad'; fbEl.textContent=`Era: ${wrong}`; fbEl.style.display='block';
   }
-  refreshStats();
-  const nextIdx=results[results.length-1].blankIdx+1;
-  if(allOk){
-    setTimeout(()=>nextIdx<S.blanks.length?showBlank(nextIdx):endGame(),1400);
-  }else{
-    pausePlay();
-    showContinueBtn(nextIdx);
-  }
+  if(!allOk) pausePlay();
+  const delay=allOk?1200:2000;
+  setTimeout(()=>{
+    fbEl.style.display='none';
+    nextIdx<S.blanks.length?showBlank(nextIdx):endGame();
+  },delay);
 }
 
-function setFb(id,ok,msg){const el=document.getElementById(id);el.className='fb '+(ok?'ok':'bad');el.textContent=msg;}
-function clearFb(){['fb-sel','fb-typ'].forEach(id=>{const el=document.getElementById(id);if(el){el.className='fb';el.textContent='';}});}
+function setFb(id,ok,msg){
+  // Legacy: route to inline-fb
+  const fbEl=document.getElementById('inline-fb');
+  fbEl.className='inline-fb '+(ok?'ok':'bad'); fbEl.textContent=msg; fbEl.style.display='block';
+}
+function clearFb(){const fbEl=document.getElementById('inline-fb');if(fbEl){fbEl.style.display='none';fbEl.textContent='';}}
 function norm(s){return s.toLowerCase().replace(/[^a-z']/g,'');}
 function escHtml(t){return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
@@ -1443,6 +1473,8 @@ function buildSentenceBar(activeIdx){
     html+=`<div class="cap-line next">${escHtml(S.captions[capIdx+1].text)}</div>`;
   }
   document.getElementById('sentence-bar').innerHTML=html;
+  // Attach inline interaction after DOM update
+  if(!S.answered) attachInlineInputs(activeIdx);
 }
 
 function renderCap(cap,activeIdx,isCurrent){
@@ -1450,7 +1482,7 @@ function renderCap(cap,activeIdx,isCurrent){
   S.blanks.forEach((b,i)=>{
     if(b.cap!==cap) return;
     const ci=cap.text.toLowerCase().indexOf(b.word.toLowerCase());
-    if(ci!==-1) segs.push({start:ci,end:ci+b.word.length,word:b.word,result:S.blankResults[i],isActive:isCurrent});
+    if(ci!==-1) segs.push({start:ci,end:ci+b.word.length,word:b.word,result:S.blankResults[i],idx:i,isActive:isCurrent});
   });
   if(segs.length===0) return escHtml(cap.text);
   segs.sort((a,b)=>a.start-b.start);
@@ -1459,12 +1491,15 @@ function renderCap(cap,activeIdx,isCurrent){
     html+=escHtml(cap.text.slice(pos,seg.start));
     if(seg.result){
       if(seg.result.ok){
-        html+=`<span class="filled-ok">${seg.word}</span>`;
+        html+=`<span class="filled-ok">${escHtml(seg.word)}</span>`;
       }else{
-        html+=`<span class="filled-wrong">${seg.result.correct}</span>`;
+        html+=`<span class="filled-wrong">${escHtml(seg.result.correct)}</span>`;
       }
-    }else if(seg.isActive){
-      html+=`<span class="blank">${'_'.repeat(Math.max(4,seg.word.length))}</span>`;
+    }else if(seg.isActive&&S.mode==='typing'){
+      const w=Math.max(52,seg.word.length*11);
+      html+=`<input class="inline-blank" id="iblk-${seg.idx}" data-bi="${seg.idx}" style="width:${w}px" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">`;
+    }else if(seg.isActive&&S.mode==='selection'){
+      html+=`<span class="blank-sel" id="iblk-${seg.idx}" data-bi="${seg.idx}">${'_'.repeat(Math.max(4,seg.word.length))}</span>`;
     }else{
       html+=`<span class="blank" style="opacity:.45">${'_'.repeat(Math.max(4,seg.word.length))}</span>`;
     }
@@ -1499,62 +1534,65 @@ function timeUp(){
   const group=sentenceGroup(S.idx);
   S.lives=Math.max(0,S.lives-1);
   updateLives();
-  S.err+=group.length; S.streak=0; S.bonus=1;
+  // Show correct words inline
+  group.forEach(blankIdx=>{
+    const correct=S.blanks[blankIdx].word;
+    S.blankResults[blankIdx]={ok:false,correct,given:''};
+    S.err++;
+    if(S.mode==='typing'){
+      const inp=document.getElementById(`iblk-${blankIdx}`);
+      if(inp){inp.value=correct;inp.disabled=true;inp.classList.add('bad');}
+    } else {
+      const span=document.getElementById(`iblk-${blankIdx}`);
+      if(span){span.textContent=correct;span.style.color='#64b5f6';span.style.borderBottomColor='#4c8eff';}
+    }
+  });
+  S.streak=0; S.bonus=1;
   refreshStats();
   pausePlay();
   const nextIdx=group[group.length-1]+1;
-  const fbId=S.mode==='selection'?'fb-sel':'fb-typ';
   if(S.lives<=0){
-    setFb(fbId,false,'⏱ ¡Tiempo! Sin vidas restantes ❌');
-    showBuyLifeBtn(nextIdx);
+    setFb(false,'⏱ Sin vidas — ¿Comprar?');
+    showBuyLifeInline(nextIdx);
   }else{
-    setFb(fbId,false,`⏱ ¡Tiempo! ${'❤️'.repeat(S.lives)} ${S.lives} vida${S.lives!==1?'s':''} restante${S.lives!==1?'s':''}`);
-    showContinueBtn(nextIdx);
+    setFb(false,`⏱ ¡Tiempo! ${S.lives} vida${S.lives!==1?'s':''} restante${S.lives!==1?'s':''}`);
+    setTimeout(()=>{clearFb();nextIdx<S.blanks.length?showBlank(nextIdx):endGame();},2000);
   }
 }
 
-function showContinueBtn(nextIdx){
-  const panel=S.mode==='selection'
-    ?document.getElementById('sel-panel')
-    :document.getElementById('typ-panel');
-  if(panel.querySelector('.btn-continue')) return;
-  const btn=document.createElement('button');
-  btn.className='btn-continue';
-  btn.textContent='Continuar →';
-  btn.onclick=()=>nextIdx<S.blanks.length?showBlank(nextIdx):endGame();
-  panel.appendChild(btn);
-}
-
-function showBuyLifeBtn(nextIdx){
+function showBuyLifeInline(nextIdx){
+  const controls=document.getElementById('game-controls');
   const cost=300;
-  const panel=S.mode==='selection'
-    ?document.getElementById('sel-panel')
-    :document.getElementById('typ-panel');
+  const existing=controls.querySelectorAll('.buy-life-btn');
+  existing.forEach(el=>el.remove());
   if(S.score>=cost){
     const buyBtn=document.createElement('button');
-    buyBtn.className='btn-continue';
-    buyBtn.style.background='#9c27b0';
+    buyBtn.className='btn-replay buy-life-btn';
+    buyBtn.style.background='#4a148c';
     buyBtn.textContent=`💜 Comprar vida (-${cost} pts)`;
     buyBtn.onclick=()=>{
       S.score-=cost; S.lives=1; updateLives(); refreshStats();
-      buyBtn.remove(); skipBtn.remove();
-      const fbId=S.mode==='selection'?'fb-sel':'fb-typ';
-      setFb(fbId,true,'¡Vida recuperada! Continúa...');
-      showContinueBtn(nextIdx);
+      controls.querySelectorAll('.buy-life-btn').forEach(el=>el.remove());
+      clearFb();
+      setTimeout(()=>nextIdx<S.blanks.length?showBlank(nextIdx):endGame(),400);
     };
-    panel.appendChild(buyBtn);
+    controls.appendChild(buyBtn);
   }
   const skipBtn=document.createElement('button');
-  skipBtn.className='btn-replay'; skipBtn.style.marginTop='8px';
-  skipBtn.textContent='Continuar sin vida →';
-  skipBtn.onclick=()=>nextIdx<S.blanks.length?showBlank(nextIdx):endGame();
-  panel.appendChild(skipBtn);
+  skipBtn.className='btn-replay buy-life-btn';
+  skipBtn.textContent='Continuar →';
+  skipBtn.onclick=()=>{
+    controls.querySelectorAll('.buy-life-btn').forEach(el=>el.remove());
+    clearFb();
+    nextIdx<S.blanks.length?showBlank(nextIdx):endGame();
+  };
+  controls.appendChild(skipBtn);
 }
 
 function updateLives(){
   const el=document.getElementById('g-lives');
   if(!el) return;
-  el.textContent='❤️'.repeat(Math.max(0,S.lives))+'🖤'.repeat(Math.max(0,3-S.lives));
+  el.textContent='❤️'.repeat(Math.max(0,S.lives))+'🖤'.repeat(Math.max(0,S.initLives-S.lives));
 }
 
 function prevBlank(){
