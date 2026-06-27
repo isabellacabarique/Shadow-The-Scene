@@ -176,8 +176,8 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-heigh
 .timer-track{height:6px;background:rgba(255,255,255,.1);}
 .timer-fill{height:100%;background:#ff4444;transition:width .1s linear;}
 .game-body{display:flex;flex:1;min-height:0;}
-.video-col{flex:none;background:#000;display:flex;align-items:center;justify-content:center;}
-#yt-player{width:100%;max-height:38vh;aspect-ratio:16/9;}
+.video-col{flex:none;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:10px 0;}
+#yt-player{width:50%;aspect-ratio:16/9;}
 .answer-col{flex:1;min-width:270px;background:var(--card);
   display:flex;flex-direction:column;gap:10px;padding:18px;
   justify-content:flex-start;overflow-y:auto;}
@@ -268,7 +268,7 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-heigh
 
 /* ── GAME CONTROLS (below video) ── */
 .game-controls{
-  display:flex;align-items:center;gap:10px;
+  display:flex;align-items:center;justify-content:center;gap:10px;
   padding:8px 18px;background:rgba(0,0,0,.18);
   border-top:1px solid rgba(255,255,255,.05);
   flex-wrap:wrap;
