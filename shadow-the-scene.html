@@ -447,7 +447,7 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-heigh
         <h3>Intermedio</h3><p id="ld-i">Rellenar palabras al azar (25%)</p>
         <div class="licon">😐</div>
       </div>
-      <div class="level-card bg-purple" onclick="pickLevel('advanced',65,-2,20,2)">
+      <div class="level-card bg-purple" onclick="pickLevel('advanced',65,1,20,2,true)">
         <h3>Avanzado</h3><p id="ld-a">Máximo 2 palabras visibles por oración · 20 seg · 2 vidas</p>
         <div class="licon">😤</div>
       </div>
@@ -608,7 +608,7 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-heigh
 <script>
 const S={
   url:'',vid:'',platform:'',hash:null,
-  level:'',pct:10,phraseLen:1,mode:'selection',
+  level:'',pct:10,phraseLen:1,mode:'selection',blankAll:false,
   captions:[],blanks:[],
   idx:0,score:0,cor:0,err:0,
   bonus:1,streak:0,
@@ -651,10 +651,11 @@ function detect(url){
   return{platform:null,vid:null};
 }
 
-function pickLevel(lvl,pct,phraseLen,maxTime,lives){
+function pickLevel(lvl,pct,phraseLen,maxTime,lives,blankAll){
   S.level=lvl;S.pct=pct;S.phraseLen=phraseLen||1;
   S.initMaxTime=S.maxTime=maxTime||30;
   S.initLives=lives||3;
+  S.blankAll=!!blankAll;
   show('screen-mode');
 }
 
@@ -1049,31 +1050,33 @@ function makeBlanks(caps,pct,phraseLen){
       .map(({cap})=>({cap,word:cap.text,wt:10,pos:0,fullSentence:true}));
   }
 
-  // ── Advanced mode (phraseLen === -2): max 2 visible words per caption ────────
-  if(phraseLen===-2){
+  // ── Advanced mode: keep only opening function words visible ─────────────────
+  // Rule: show the first word + any consecutive SKIP_WORDS that follow it.
+  // Everything else (including "at", "the", "these" mid-sentence) is blank.
+  // Proper nouns (names of people/places) are always visible.
+  if(S.blankAll){
     const result=[];
     for(const cap of caps){
       const words=[...cap.text.matchAll(/\b[a-zA-Z'][a-zA-Z']*\b/g)]
         .map(m=>({word:m[0],pos:m.index}));
-      if(words.length<3) continue;
+      if(words.length<2) continue;
 
-      // Identify proper nouns (capitalized mid-sentence = names of people/places)
       const visiblePos=new Set();
+
+      // Always show the first word as a starting anchor
+      visiblePos.add(words[0].pos);
+      // Keep any additional consecutive skip words right after the first
+      let wi=1;
+      while(wi<words.length && SKIP_WORDS.has(words[wi].word.toLowerCase())){
+        visiblePos.add(words[wi].pos);
+        wi++;
+      }
+
+      // Proper nouns (capitalized mid-sentence) always visible
       words.forEach(({word,pos})=>{
-        if(/^[A-Z]/.test(word)&&pos>0&&!/[.!?!,]\s*$/.test(cap.text.slice(0,pos)))
+        if(/^[A-Z]/.test(word)&&pos>0&&!/[.!?]\s*$/.test(cap.text.slice(0,pos)))
           visiblePos.add(pos);
       });
-
-      // Fill up to 2 total visible with evenly-spread non-proper words
-      if(visiblePos.size<2){
-        const nonProper=words.filter(w=>!visiblePos.has(w.pos));
-        const needed=2-visiblePos.size;
-        const step=Math.floor(nonProper.length/(needed+1));
-        for(let i=0;i<needed&&nonProper.length>0;i++){
-          const pick=nonProper[Math.min(step*(i+1),nonProper.length-1)];
-          visiblePos.add(pick.pos);
-        }
-      }
 
       // Blank every word not in the visible set
       words.forEach(({word,pos})=>{
