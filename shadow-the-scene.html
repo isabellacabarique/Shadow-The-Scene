@@ -447,8 +447,8 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-heigh
         <h3>Intermedio</h3><p id="ld-i">Rellenar palabras al azar (25%)</p>
         <div class="licon">😐</div>
       </div>
-      <div class="level-card bg-purple" onclick="pickLevel('advanced',50,-1,25,2)">
-        <h3>Avanzado</h3><p id="ld-a">Dictado de oraciones completas · 50% del video · 25 seg · 2 vidas</p>
+      <div class="level-card bg-purple" onclick="pickLevel('advanced',75,6,20,2)">
+        <h3>Avanzado</h3><p id="ld-a">La mayoría de palabras ocultas · 75% del video · 20 seg · 2 vidas</p>
         <div class="licon">😤</div>
       </div>
       <div class="level-card bg-red"    onclick="pickLevel('expert',100)">
@@ -655,8 +655,7 @@ function pickLevel(lvl,pct,phraseLen,maxTime,lives){
   S.level=lvl;S.pct=pct;S.phraseLen=phraseLen||1;
   S.initMaxTime=S.maxTime=maxTime||30;
   S.initLives=lives||3;
-  if(S.phraseLen===-1){S.mode='typing';show('screen-loading');loadAndPrepare();}
-  else show('screen-mode');
+  show('screen-mode');
 }
 
 function updateLevelDescs(total){
