@@ -1220,7 +1220,7 @@ function distractors(correct,allCaps){
 window.onYouTubeIframeAPIReady=()=>{S._ytReady=true;};
 
 // ── Vimeo SDK helpers ─────────────────────────────────────────────────────────
-function vimeoPlay(){if(S.vimeoPlayer)S.vimeoPlayer.play().catch(()=>{});}
+function vimeoPlay(){if(S.vimeoPlayer){S.vimeoPlayer.setVolume(1).catch(()=>{});S.vimeoPlayer.play().catch(()=>{});}}
 function vimeoPause(){if(S.vimeoPlayer)S.vimeoPlayer.pause().catch(()=>{});}
 function vimeoSeek(t){if(S.vimeoPlayer)S.vimeoPlayer.setCurrentTime(t).catch(()=>{});}
 
@@ -1262,7 +1262,7 @@ function initPlayer(){
   }else if(S.platform==='vimeo'){
     const f=document.createElement('iframe');
     const hParam=S.hash?`&h=${S.hash}`:'';
-    f.src=`https://player.vimeo.com/video/${S.vid}?playsinline=1${hParam}`;
+    f.src=`https://player.vimeo.com/video/${S.vid}?playsinline=1&muted=1${hParam}`;
     f.style.cssText='width:100%;height:100%;';
     f.frameBorder='0';f.allowFullscreen=true;
     f.allow='autoplay; fullscreen; picture-in-picture';
@@ -1276,12 +1276,31 @@ function initPlayer(){
       S.vimeoPlayer=player;
       player.ready().then(()=>{
         S.vimeoReady=true;
-        // Muted play+pause unlocks audio on iOS without requiring a tap
-        player.setVolume(0).then(()=>player.play()).then(()=>{
-          setTimeout(()=>{
-            player.pause().then(()=>player.setVolume(1)).then(()=>showBlank(0)).catch(()=>showBlank(0));
-          },300);
-        }).catch(()=>showBlank(0));
+        const isIOS=/iPhone|iPad|iPod/i.test(navigator.userAgent);
+        if(isIOS){
+          // iOS blocks unmuting via SDK — need a real tap
+          const overlay=document.createElement('div');
+          overlay.style.cssText='position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.5);cursor:pointer;z-index:9;border-radius:8px;';
+          overlay.innerHTML='<div style="background:#fff;border-radius:50%;width:70px;height:70px;display:flex;align-items:center;justify-content:center;font-size:2.2rem;box-shadow:0 4px 20px rgba(0,0,0,.4);">▶</div>';
+          overlay.addEventListener('click',()=>{
+            overlay.remove();
+            player.setVolume(1).catch(()=>{});
+            showBlank(0);
+          },{once:true});
+          const wrap=document.getElementById('yt-wrapper');
+          wrap.style.position='relative';
+          wrap.appendChild(overlay);
+        }else{
+          // Android: muted autoplay works, then unmute
+          player.play().then(()=>{
+            setTimeout(()=>{
+              player.pause()
+                .then(()=>player.setVolume(1))
+                .then(()=>showBlank(0))
+                .catch(()=>showBlank(0));
+            },300);
+          }).catch(()=>showBlank(0));
+        }
       }).catch(()=>{if(!S.vimeoReady){S.vimeoReady=true;showBlank(0);}});
       player.on('timeupdate',data=>{
         S.vimeoTime=data.seconds||0;
