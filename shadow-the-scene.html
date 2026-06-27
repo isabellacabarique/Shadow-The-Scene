@@ -1237,18 +1237,11 @@ function initPlayer(){
         videoId:S.vid,
         playerVars:{playsinline:1,rel:0,modestbranding:1,autoplay:0},
         events:{
-          onReady(){
-            if(/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)){
-              // Mobile: need real user tap before playVideo() works
-              const overlay=document.createElement('div');
-              overlay.id='yt-tap-overlay';
-              overlay.style.cssText='position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.5);cursor:pointer;z-index:9;border-radius:8px;';
-              overlay.innerHTML='<div style="background:#fff;border-radius:50%;width:70px;height:70px;display:flex;align-items:center;justify-content:center;font-size:2.2rem;box-shadow:0 4px 20px rgba(0,0,0,.4);">▶</div>';
-              overlay.addEventListener('click',()=>{overlay.remove();showBlank(0);},{once:true});
-              document.getElementById('yt-wrapper').appendChild(overlay);
-            }else{
-              showBlank(0);
-            }
+          onReady(ev){
+            // Muted play+pause unlocks audio on iOS without requiring a tap
+            ev.target.mute();
+            ev.target.playVideo();
+            setTimeout(()=>{ev.target.pauseVideo();ev.target.unMute();showBlank(0);},300);
           },
           onStateChange(ev){
             if(ev.data===YT.PlayerState.PLAYING&&S.seg&&!S.answered){
@@ -1283,7 +1276,12 @@ function initPlayer(){
       S.vimeoPlayer=player;
       player.ready().then(()=>{
         S.vimeoReady=true;
-        showBlank(0);
+        // Muted play+pause unlocks audio on iOS without requiring a tap
+        player.setVolume(0).then(()=>player.play()).then(()=>{
+          setTimeout(()=>{
+            player.pause().then(()=>player.setVolume(1)).then(()=>showBlank(0)).catch(()=>showBlank(0));
+          },300);
+        }).catch(()=>showBlank(0));
       }).catch(()=>{if(!S.vimeoReady){S.vimeoReady=true;showBlank(0);}});
       player.on('timeupdate',data=>{
         S.vimeoTime=data.seconds||0;
