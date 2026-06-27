@@ -547,9 +547,11 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-heigh
 <!-- ══ SCREEN 6: GAME ══ -->
 <div id="screen-game" class="screen">
   <div class="topbar">
-    <span class="brand-bar-title" style="font-size:.72rem;">Listening Lab &nbsp;|&nbsp; <span>Shadow the Scene</span></span>
-    <div style="width:1px;height:20px;background:rgba(255,255,255,.15);flex-shrink:0;"></div>
-    <button onclick="goToLevel()" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:8px;color:#fff;font-size:.82rem;cursor:pointer;padding:5px 12px;font-family:inherit;transition:background .15s;flex-shrink:0;" onmouseover="this.style.background='rgba(255,255,255,.2)'" onmouseout="this.style.background='rgba(255,255,255,.1)'">← Cambiar nivel</button>
+    <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0;">
+      <span class="brand-bar-title" style="font-size:.72rem;cursor:pointer;" onclick="show('screen-url')">Listening Lab &nbsp;|&nbsp; <span>Shadow the Scene</span></span>
+      <button onclick="goToLevel()" style="background:#4c8eff;border:none;border-radius:8px;color:#fff;font-size:.78rem;font-weight:600;cursor:pointer;padding:4px 10px;font-family:inherit;transition:background .15s;text-align:left;" onmouseover="this.style.background='#64b5f6'" onmouseout="this.style.background='#4c8eff'">← Cambiar nivel</button>
+    </div>
+    <div style="width:1px;height:36px;background:rgba(255,255,255,.15);flex-shrink:0;"></div>
     <button class="icon-btn" onclick="togglePause()" id="pause-btn" title="Pausar">⏸</button>
     <div class="sbox"><span class="slabel">Puntos</span><span class="sval pts" id="g-pts">00000</span></div>
     <div class="sbox"><span class="slabel">Huecos</span><span class="sval" id="g-blanks">0/0</span></div>
