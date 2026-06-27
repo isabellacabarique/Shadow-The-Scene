@@ -355,10 +355,12 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-heigh
   .lives-display{font-size:.85rem;}
   .icon-btn{font-size:1rem;padding:3px 5px;}
 
-  /* ── Video: sin padding extra en móvil ── */
-  .game-body{flex-direction:column;}
+  /* ── Video: game-body no expande, solo ocupa lo del video ── */
+  .game-body{flex-direction:column;flex:none;}
   .video-col{flex:none;min-height:0;padding:4px 0;}
   #yt-wrapper{width:96%;}
+  /* Pantalla de juego no usa min-height en móvil para evitar scroll innecesario */
+  #screen-game{min-height:unset;height:100dvh;overflow-y:auto;}
   .answer-col{
     flex:none;min-width:unset;
     max-height:38vh;overflow-y:auto;
