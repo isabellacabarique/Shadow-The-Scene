@@ -8,6 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Nunito:wght@300;400;600&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.29.0/dist/tabler-icons.min.css" rel="stylesheet">
 <script src="https://www.youtube.com/iframe_api"></script>
+<script src="https://player.vimeo.com/api/player.js"></script>
 <style>
 :root {
   --bg:#1a2a4a; --card:#1e3564; --card2:#243d72;
@@ -631,7 +632,7 @@ const S={
   timeLeft:30,maxTime:30,initMaxTime:30,
   timerTick:null,answered:false,
   player:null,paused:false,seg:null,
-  vimeoIframe:null,vimeoTime:0,vimeoReady:false,
+  vimeoIframe:null,vimeoPlayer:null,vimeoTime:0,vimeoReady:false,
   timerStarted:false,
   sentenceTimer:null,sentenceWatcher:null,blankResults:[],
   lives:3,initLives:3,
@@ -1218,49 +1219,15 @@ function distractors(correct,allCaps){
 
 window.onYouTubeIframeAPIReady=()=>{S._ytReady=true;};
 
-// ── Vimeo postMessage helpers ─────────────────────────────────────────────────
-function vimeoPost(method,value){
-  if(!S.vimeoIframe||!S.vimeoIframe.contentWindow) return;
-  const data={method};
-  if(value!==undefined) data.value=value;
-  try{S.vimeoIframe.contentWindow.postMessage(JSON.stringify(data),'https://player.vimeo.com');}catch(e){}
-}
-
-// Single persistent listener for all Vimeo postMessage events
-window.addEventListener('message',function(e){
-  if(S.platform!=='vimeo') return;
-  let d;
-  try{d=typeof e.data==='string'?JSON.parse(e.data):null;}catch(err){return;}
-  if(!d||!d.event) return;
-
-  if(d.event==='ready'&&!S.vimeoReady){
-    S.vimeoReady=true;
-    vimeoPost('addEventListener','timeupdate');
-    vimeoPost('addEventListener','play');
-    vimeoPost('addEventListener','pause');
-    showBlank(0);
-  }
-
-  if(d.event==='timeupdate'&&d.data){
-    S.vimeoTime=d.data.seconds||0;
-    const cap=S.seg?S.seg.cap:null;
-    if(!cap||S.answered||S.paused) return;
-    // Start countdown only when video actually reaches the sentence
-    if(!S.timerStarted&&S.vimeoTime>=cap.start){
-      S.timerStarted=true;
-      startTimer();
-    }
-    // Pause precisely when sentence ends
-    if(S.vimeoTime>=cap.end){
-      clearSentenceTimer();
-      vimeoPost('pause');
-    }
-  }
-});
+// ── Vimeo SDK helpers ─────────────────────────────────────────────────────────
+function vimeoPlay(){if(S.vimeoPlayer)S.vimeoPlayer.play().catch(()=>{});}
+function vimeoPause(){if(S.vimeoPlayer)S.vimeoPlayer.pause().catch(()=>{});}
+function vimeoSeek(t){if(S.vimeoPlayer)S.vimeoPlayer.setCurrentTime(t).catch(()=>{});}
 
 function initPlayer(){
   try{if(S.player)S.player.destroy();}catch(e){}
-  S.vimeoIframe=null; S.vimeoTime=0; S.vimeoReady=false; S.timerStarted=false;
+  try{if(S.vimeoPlayer)S.vimeoPlayer.destroy();}catch(e){}
+  S.vimeoIframe=null; S.vimeoPlayer=null; S.vimeoTime=0; S.vimeoReady=false; S.timerStarted=false;
   document.querySelector('.video-col').innerHTML='<div id="yt-wrapper"><div id="yt-player"></div></div>';
   if(S.platform==='youtube'){
     const tryCreate=()=>{
@@ -1268,15 +1235,31 @@ function initPlayer(){
       S.player=new YT.Player('yt-player',{
         width:'100%',height:'100%',
         videoId:S.vid,
-        playerVars:{playsinline:1,rel:0,modestbranding:1},
+        playerVars:{playsinline:1,rel:0,modestbranding:1,autoplay:0},
         events:{
-          onReady(){showBlank(0);},
+          onReady(){
+            if(/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)){
+              // Mobile: need real user tap before playVideo() works
+              const overlay=document.createElement('div');
+              overlay.id='yt-tap-overlay';
+              overlay.style.cssText='position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.5);cursor:pointer;z-index:9;border-radius:8px;';
+              overlay.innerHTML='<div style="background:#fff;border-radius:50%;width:70px;height:70px;display:flex;align-items:center;justify-content:center;font-size:2.2rem;box-shadow:0 4px 20px rgba(0,0,0,.4);">▶</div>';
+              overlay.addEventListener('click',()=>{overlay.remove();showBlank(0);},{once:true});
+              document.getElementById('yt-wrapper').appendChild(overlay);
+            }else{
+              showBlank(0);
+            }
+          },
           onStateChange(ev){
-            // Start timer when YT video actually starts playing (after pre-roll)
-            if(ev.data===YT.PlayerState.PLAYING&&S.seg&&!S.timerStarted&&!S.answered){
-              S.timerStarted=true;
-              clearTimeout(S._ytTimerDelay);
-              S._ytTimerDelay=setTimeout(()=>{if(!S.answered)startTimer();},1500);
+            if(ev.data===YT.PlayerState.PLAYING&&S.seg&&!S.answered){
+              // Start timer on first play
+              if(!S.timerStarted){
+                S.timerStarted=true;
+                clearTimeout(S._ytTimerDelay);
+                S._ytTimerDelay=setTimeout(()=>{if(!S.answered)startTimer();},1500);
+              }
+              // Reschedule sentence pause (in case it was missed)
+              if(!S.answered&&!S.paused) scheduleSentencePause(S.seg.cap);
             }
           }
         },
@@ -1286,15 +1269,33 @@ function initPlayer(){
   }else if(S.platform==='vimeo'){
     const f=document.createElement('iframe');
     const hParam=S.hash?`&h=${S.hash}`:'';
-    f.src=`https://player.vimeo.com/video/${S.vid}?api=1&playsinline=1${hParam}`;
+    f.src=`https://player.vimeo.com/video/${S.vid}?playsinline=1${hParam}`;
     f.style.cssText='width:100%;height:100%;';
     f.frameBorder='0';f.allowFullscreen=true;
     f.allow='autoplay; fullscreen; picture-in-picture';
     document.getElementById('yt-wrapper').innerHTML='';
     document.getElementById('yt-wrapper').appendChild(f);
     S.vimeoIframe=f;
-    // Fallback: if 'ready' event never fires, show blanks anyway
-    setTimeout(()=>{if(!S.vimeoReady){S.vimeoReady=true;showBlank(0);}},4000);
+    // Use Vimeo Player SDK — handles mobile audio policy correctly
+    const waitSdk=()=>{
+      if(typeof Vimeo==='undefined'||!Vimeo.Player){setTimeout(waitSdk,300);return;}
+      const player=new Vimeo.Player(f);
+      S.vimeoPlayer=player;
+      player.ready().then(()=>{
+        S.vimeoReady=true;
+        showBlank(0);
+      }).catch(()=>{if(!S.vimeoReady){S.vimeoReady=true;showBlank(0);}});
+      player.on('timeupdate',data=>{
+        S.vimeoTime=data.seconds||0;
+        const cap=S.seg?S.seg.cap:null;
+        if(!cap||S.answered||S.paused) return;
+        if(!S.timerStarted&&S.vimeoTime>=cap.start){S.timerStarted=true;startTimer();}
+        if(S.vimeoTime>=cap.end){clearSentenceTimer();vimeoPause();}
+      });
+    };
+    waitSdk();
+    // Fallback: if SDK never fires ready, show blanks anyway
+    setTimeout(()=>{if(!S.vimeoReady){S.vimeoReady=true;showBlank(0);}},5000);
   }else{showBlank(0);}
 }
 
@@ -1304,13 +1305,13 @@ function seekPlay(t){
   if(S.platform==='youtube'){
     try{if(!S.player||!S.player.seekTo)return;S.player.seekTo(pre,true);S.player.playVideo();}catch(e){}
   }else if(S.platform==='vimeo'){
-    vimeoPost('setCurrentTime',pre);
-    vimeoPost('play');
+    vimeoSeek(pre);
+    vimeoPlay();
   }
 }
 function pausePlay(){
   if(S.platform==='youtube'){try{if(S.player?.pauseVideo)S.player.pauseVideo();}catch(e){}}
-  else if(S.platform==='vimeo'){vimeoPost('pause');}
+  else if(S.platform==='vimeo'){vimeoPause();}
 }
 function clearSentenceTimer(){
   if(S.sentenceTimer){clearTimeout(S.sentenceTimer);S.sentenceTimer=null;}
