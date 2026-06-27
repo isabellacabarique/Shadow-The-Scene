@@ -260,6 +260,7 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-heigh
 .inline-blank.ok{border-color:#66bb6a;color:#a5d6a7;background:rgba(76,175,80,.15);}
 .inline-blank.bad{border-color:#64b5f6;color:#64b5f6;background:rgba(76,142,255,.1);}
 .inline-blank:disabled{cursor:default;}
+.sentence-blank{display:block;width:100%;box-sizing:border-box;min-width:unset;text-align:left;padding:6px 10px;border-radius:6px;margin:4px 0;font-size:.95rem;}
 
 /* ── INLINE BLANK (SELECTION) ── */
 .blank-sel{
@@ -446,8 +447,8 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-heigh
         <h3>Intermedio</h3><p id="ld-i">Rellenar palabras al azar (25%)</p>
         <div class="licon">😐</div>
       </div>
-      <div class="level-card bg-purple" onclick="pickLevel('advanced',50,6,18,2)">
-        <h3>Avanzado</h3><p id="ld-a">Frases de 6 palabras · 50% del video · 18 seg · 2 vidas</p>
+      <div class="level-card bg-purple" onclick="pickLevel('advanced',50,-1,25,2)">
+        <h3>Avanzado</h3><p id="ld-a">Dictado de oraciones completas · 50% del video · 25 seg · 2 vidas</p>
         <div class="licon">😤</div>
       </div>
       <div class="level-card bg-red"    onclick="pickLevel('expert',100)">
@@ -654,7 +655,8 @@ function pickLevel(lvl,pct,phraseLen,maxTime,lives){
   S.level=lvl;S.pct=pct;S.phraseLen=phraseLen||1;
   S.initMaxTime=S.maxTime=maxTime||30;
   S.initLives=lives||3;
-  show('screen-mode');
+  if(S.phraseLen===-1){S.mode='typing';show('screen-loading');loadAndPrepare();}
+  else show('screen-mode');
 }
 
 function updateLevelDescs(total){
@@ -662,7 +664,7 @@ function updateLevelDescs(total){
     `Rellenar ${n} palabras al azar de ${total} (${p}%)`;
   set('ld-b',Math.round(total*.10),10);
   set('ld-i',Math.round(total*.25),25);
-  set('ld-a',Math.round(total*.50),50);
+  // Advanced uses sentence dictation — keep fixed description
 }
 
 function pickMode(mode){
@@ -1031,6 +1033,22 @@ function wordWeight(word,cap){
 
 function makeBlanks(caps,pct,phraseLen){
   phraseLen=phraseLen||1;
+
+  // ── Sentence dictation mode (phraseLen === -1) ────────────────────────────
+  if(phraseLen===-1){
+    const capScores=[];
+    for(const cap of caps){
+      const words=[...cap.text.matchAll(/\b[a-zA-Z'][a-zA-Z']*\b/g)];
+      if(words.length<4) continue; // skip very short captions
+      const score=words.reduce((a,m)=>a+wordWeight(m[0],cap),0)/words.length;
+      capScores.push({cap,score});
+    }
+    capScores.sort((a,b)=>b.score-a.score);
+    const n=Math.max(3,Math.round(capScores.length*pct/100));
+    return capScores.slice(0,n)
+      .sort((a,b)=>a.cap.start-b.cap.start)
+      .map(({cap})=>({cap,word:cap.text,wt:10,pos:0,fullSentence:true}));
+  }
 
   // ── Paso 1: seleccionar palabras ancla por peso ──────────────────────────
   const candidates=[];
@@ -1405,11 +1423,12 @@ function attachInlineInputs(activeIdx){
 
 function submitInlineTyping(group){
   if(S.answered) return;
-  const results=group.map((blankIdx,i)=>{
+  const results=group.map((blankIdx)=>{
     const inp=document.getElementById(`iblk-${blankIdx}`);
     const given=(inp?.value||'').trim();
     const correct=S.blanks[blankIdx].word;
-    return{blankIdx,given,correct,ok:norm(given)===norm(correct)};
+    const isSent=S.blanks[blankIdx].fullSentence;
+    return{blankIdx,given,correct,ok:isSent?normSent(given)===normSent(correct):norm(given)===norm(correct)};
   });
   if(results.some(r=>!r.given)) return;
   S.answered=true; clearTimer(); clearSentenceTimer();
@@ -1462,6 +1481,7 @@ function setFb(id,ok,msg){
 }
 function clearFb(){const fbEl=document.getElementById('inline-fb');if(fbEl){fbEl.style.display='none';fbEl.textContent='';}}
 function norm(s){return s.toLowerCase().replace(/[^a-z']/g,'');}
+function normSent(s){return s.toLowerCase().replace(/[^a-z' ]/g,'').replace(/\s+/g,' ').trim();}
 function escHtml(t){return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
 function buildSentenceBar(activeIdx){
@@ -1473,7 +1493,7 @@ function buildSentenceBar(activeIdx){
   }
   html+=`<div class="cap-line current">${renderCap(currentCap,activeIdx,true)}</div>`;
   if(capIdx+1<S.captions.length){
-    html+=`<div class="cap-line next">${escHtml(S.captions[capIdx+1].text)}</div>`;
+    html+=`<div class="cap-line next">${renderCap(S.captions[capIdx+1],activeIdx,false)}</div>`;
   }
   document.getElementById('sentence-bar').innerHTML=html;
   // Attach inline interaction after DOM update
@@ -1487,7 +1507,7 @@ function renderCap(cap,activeIdx,isCurrent){
     // Use stored position from makeBlanks (regex-accurate) instead of indexOf
     const ci=(typeof b.pos==='number')?b.pos:cap.text.toLowerCase().indexOf(b.word.toLowerCase());
     if(ci!==-1&&ci+b.word.length<=cap.text.length)
-      segs.push({start:ci,end:ci+b.word.length,word:b.word,result:S.blankResults[i],idx:i,isActive:isCurrent});
+      segs.push({start:ci,end:ci+b.word.length,word:b.word,result:S.blankResults[i],idx:i,isActive:isCurrent,fullSentence:!!b.fullSentence});
   });
   if(segs.length===0) return escHtml(cap.text);
   segs.sort((a,b)=>a.start-b.start);
@@ -1502,8 +1522,12 @@ function renderCap(cap,activeIdx,isCurrent){
         html+=`<span class="filled-wrong">${escHtml(seg.result.correct)}</span>`;
       }
     }else if(seg.isActive&&S.mode==='typing'){
-      const w=Math.max(5,seg.word.length+3);
-      html+=`<input class="inline-blank" id="iblk-${seg.idx}" data-bi="${seg.idx}" style="width:${w}ch" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">`;
+      if(seg.fullSentence){
+        html+=`<input class="inline-blank sentence-blank" id="iblk-${seg.idx}" data-bi="${seg.idx}" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Escribe lo que escuchas…">`;
+      }else{
+        const w=Math.max(5,seg.word.length+3);
+        html+=`<input class="inline-blank" id="iblk-${seg.idx}" data-bi="${seg.idx}" style="width:${w}ch" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">`;
+      }
     }else if(seg.isActive&&S.mode==='selection'){
       html+=`<span class="blank-sel" id="iblk-${seg.idx}" data-bi="${seg.idx}">${'_'.repeat(Math.max(4,seg.word.length))}</span>`;
     }else{
