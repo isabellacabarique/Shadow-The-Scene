@@ -448,7 +448,7 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-heigh
         <div class="licon">😐</div>
       </div>
       <div class="level-card bg-purple" onclick="pickLevel('advanced',65,-2,20,2)">
-        <h3>Avanzado</h3><p id="ld-a">Todas las palabras ocultas · 65% del video · 20 seg · 2 vidas</p>
+        <h3>Avanzado</h3><p id="ld-a">Máximo 2 palabras visibles por oración · 20 seg · 2 vidas</p>
         <div class="licon">😤</div>
       </div>
       <div class="level-card bg-red"    onclick="pickLevel('expert',100)">
@@ -1049,29 +1049,38 @@ function makeBlanks(caps,pct,phraseLen){
       .map(({cap})=>({cap,word:cap.text,wt:10,pos:0,fullSentence:true}));
   }
 
-  // ── All-words mode (phraseLen === -2): blank every word in selected captions ─
+  // ── Advanced mode (phraseLen === -2): max 2 visible words per caption ────────
   if(phraseLen===-2){
-    const scoredCaps=[];
-    for(const cap of caps){
-      const words=[...cap.text.matchAll(/\b[a-zA-Z'][a-zA-Z']*\b/g)];
-      if(words.length<3) continue;
-      const score=words.reduce((a,m)=>a+wordWeight(m[0],cap),0);
-      if(score>0) scoredCaps.push({cap,words,score});
-    }
-    scoredCaps.sort((a,b)=>b.score-a.score);
-    const n=Math.max(3,Math.round(scoredCaps.length*pct/100));
     const result=[];
-    scoredCaps.slice(0,n)
-      .sort((a,b)=>a.cap.start-b.cap.start)
-      .forEach(({cap,words})=>{
-        words.forEach(m=>{
-          const w=m[0],pos=m.index;
-          // Never blank proper nouns (names of people/places): capitalized mid-sentence
-          const isProper=/^[A-Z]/.test(w)&&pos>0&&!/[.!?]\s*$/.test(cap.text.slice(0,pos));
-          if(isProper) return;
-          result.push({cap,word:w,wt:5,pos});
-        });
+    for(const cap of caps){
+      const words=[...cap.text.matchAll(/\b[a-zA-Z'][a-zA-Z']*\b/g)]
+        .map(m=>({word:m[0],pos:m.index}));
+      if(words.length<3) continue;
+
+      // Identify proper nouns (capitalized mid-sentence = names of people/places)
+      const visiblePos=new Set();
+      words.forEach(({word,pos})=>{
+        if(/^[A-Z]/.test(word)&&pos>0&&!/[.!?!,]\s*$/.test(cap.text.slice(0,pos)))
+          visiblePos.add(pos);
       });
+
+      // Fill up to 2 total visible with evenly-spread non-proper words
+      if(visiblePos.size<2){
+        const nonProper=words.filter(w=>!visiblePos.has(w.pos));
+        const needed=2-visiblePos.size;
+        const step=Math.floor(nonProper.length/(needed+1));
+        for(let i=0;i<needed&&nonProper.length>0;i++){
+          const pick=nonProper[Math.min(step*(i+1),nonProper.length-1)];
+          visiblePos.add(pick.pos);
+        }
+      }
+
+      // Blank every word not in the visible set
+      words.forEach(({word,pos})=>{
+        if(!visiblePos.has(pos)) result.push({cap,word,wt:5,pos});
+      });
+    }
+    result.sort((a,b)=>a.cap.start!==b.cap.start?a.cap.start-b.cap.start:a.pos-b.pos);
     return result;
   }
 
