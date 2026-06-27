@@ -175,10 +175,10 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-heigh
 .spacer{flex:1;}
 .timer-track{height:6px;background:rgba(255,255,255,.1);}
 .timer-fill{height:100%;background:#ff4444;transition:width .1s linear;}
-.game-body{display:flex;flex:1;min-height:0;}
-.video-col{flex:none;background:var(--bg);display:flex;justify-content:center;padding:12px 0;}
-#yt-wrapper{width:min(640px,88%);aspect-ratio:16/9;}
-#yt-wrapper iframe,#yt-wrapper #yt-player{width:100%!important;height:100%!important;}
+.game-body{display:flex;flex-direction:column;flex:1;min-height:0;}
+.video-col{width:100%;background:var(--bg);display:flex;justify-content:center;padding:12px 0;}
+#yt-wrapper{width:min(640px,88%);aspect-ratio:16/9;position:relative;overflow:hidden;}
+#yt-wrapper iframe,#yt-wrapper>div{position:absolute;top:0;left:0;width:100%!important;height:100%!important;}
 .answer-col{flex:1;min-width:270px;background:var(--card);
   display:flex;flex-direction:column;gap:10px;padding:18px;
   justify-content:flex-start;overflow-y:auto;}
