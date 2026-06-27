@@ -176,9 +176,9 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-heigh
 .timer-track{height:6px;background:rgba(255,255,255,.1);}
 .timer-fill{height:100%;background:#ff4444;transition:width .1s linear;}
 .game-body{display:flex;flex:1;min-height:0;}
-.video-col{flex:none;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:10px 0;}
-#yt-player{width:50%!important;aspect-ratio:16/9;height:auto!important;}
-.video-col iframe{width:50%!important;aspect-ratio:16/9;height:auto!important;}
+.video-col{flex:none;background:var(--bg);display:flex;justify-content:center;padding:12px 0;}
+#yt-wrapper{width:min(640px,88%);aspect-ratio:16/9;}
+#yt-wrapper iframe,#yt-wrapper #yt-player{width:100%!important;height:100%!important;}
 .answer-col{flex:1;min-width:270px;background:var(--card);
   display:flex;flex-direction:column;gap:10px;padding:18px;
   justify-content:flex-start;overflow-y:auto;}
@@ -1170,11 +1170,12 @@ window.addEventListener('message',function(e){
 function initPlayer(){
   try{if(S.player)S.player.destroy();}catch(e){}
   S.vimeoIframe=null; S.vimeoTime=0; S.vimeoReady=false; S.timerStarted=false;
-  document.querySelector('.video-col').innerHTML='<div id="yt-player"></div>';
+  document.querySelector('.video-col').innerHTML='<div id="yt-wrapper"><div id="yt-player"></div></div>';
   if(S.platform==='youtube'){
     const tryCreate=()=>{
       if(typeof YT==='undefined'||!YT.Player){setTimeout(tryCreate,400);return;}
       S.player=new YT.Player('yt-player',{
+        width:'100%',height:'100%',
         videoId:S.vid,
         playerVars:{playsinline:1,rel:0,modestbranding:1},
         events:{
@@ -1195,10 +1196,11 @@ function initPlayer(){
     const f=document.createElement('iframe');
     const hParam=S.hash?`&h=${S.hash}`:'';
     f.src=`https://player.vimeo.com/video/${S.vid}?api=1${hParam}`;
-    f.style.cssText='width:100%;aspect-ratio:16/9;';
+    f.style.cssText='width:100%;height:100%;';
     f.frameBorder='0';f.allowFullscreen=true;
     f.allow='autoplay';
-    document.getElementById('yt-player').replaceWith(f);
+    document.getElementById('yt-wrapper').innerHTML='';
+    document.getElementById('yt-wrapper').appendChild(f);
     S.vimeoIframe=f;
     // Fallback: if 'ready' event never fires, show blanks anyway
     setTimeout(()=>{if(!S.vimeoReady){S.vimeoReady=true;showBlank(0);}},4000);
@@ -1482,13 +1484,16 @@ function renderCap(cap,activeIdx,isCurrent){
   const segs=[];
   S.blanks.forEach((b,i)=>{
     if(b.cap!==cap) return;
-    const ci=cap.text.toLowerCase().indexOf(b.word.toLowerCase());
-    if(ci!==-1) segs.push({start:ci,end:ci+b.word.length,word:b.word,result:S.blankResults[i],idx:i,isActive:isCurrent});
+    // Use stored position from makeBlanks (regex-accurate) instead of indexOf
+    const ci=(typeof b.pos==='number')?b.pos:cap.text.toLowerCase().indexOf(b.word.toLowerCase());
+    if(ci!==-1&&ci+b.word.length<=cap.text.length)
+      segs.push({start:ci,end:ci+b.word.length,word:b.word,result:S.blankResults[i],idx:i,isActive:isCurrent});
   });
   if(segs.length===0) return escHtml(cap.text);
   segs.sort((a,b)=>a.start-b.start);
   let html='',pos=0;
   for(const seg of segs){
+    if(seg.start<pos) continue; // skip overlapping segments
     html+=escHtml(cap.text.slice(pos,seg.start));
     if(seg.result){
       if(seg.result.ok){
