@@ -447,8 +447,8 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-heigh
         <h3>Intermedio</h3><p id="ld-i">Rellenar palabras al azar (25%)</p>
         <div class="licon">😐</div>
       </div>
-      <div class="level-card bg-purple" onclick="pickLevel('advanced',90,6,20,2)">
-        <h3>Avanzado</h3><p id="ld-a">La mayoría de palabras ocultas · 20 seg · 2 vidas</p>
+      <div class="level-card bg-purple" onclick="pickLevel('advanced',65,-2,20,2)">
+        <h3>Avanzado</h3><p id="ld-a">Todas las palabras ocultas · 65% del video · 20 seg · 2 vidas</p>
         <div class="licon">😤</div>
       </div>
       <div class="level-card bg-red"    onclick="pickLevel('expert',100)">
@@ -1049,6 +1049,32 @@ function makeBlanks(caps,pct,phraseLen){
       .map(({cap})=>({cap,word:cap.text,wt:10,pos:0,fullSentence:true}));
   }
 
+  // ── All-words mode (phraseLen === -2): blank every word in selected captions ─
+  if(phraseLen===-2){
+    const scoredCaps=[];
+    for(const cap of caps){
+      const words=[...cap.text.matchAll(/\b[a-zA-Z'][a-zA-Z']*\b/g)];
+      if(words.length<3) continue;
+      const score=words.reduce((a,m)=>a+wordWeight(m[0],cap),0);
+      if(score>0) scoredCaps.push({cap,words,score});
+    }
+    scoredCaps.sort((a,b)=>b.score-a.score);
+    const n=Math.max(3,Math.round(scoredCaps.length*pct/100));
+    const result=[];
+    scoredCaps.slice(0,n)
+      .sort((a,b)=>a.cap.start-b.cap.start)
+      .forEach(({cap,words})=>{
+        words.forEach(m=>{
+          const w=m[0],pos=m.index;
+          // Never blank proper nouns (names of people/places): capitalized mid-sentence
+          const isProper=/^[A-Z]/.test(w)&&pos>0&&!/[.!?]\s*$/.test(cap.text.slice(0,pos));
+          if(isProper) return;
+          result.push({cap,word:w,wt:5,pos});
+        });
+      });
+    return result;
+  }
+
   // ── Paso 1: seleccionar palabras ancla por peso ──────────────────────────
   const candidates=[];
   for(const cap of caps){
@@ -1069,8 +1095,7 @@ function makeBlanks(caps,pct,phraseLen){
     if(chosenKeys.has(key)) continue;
     const used=capCount.get(c.cap)||0;
     const capWords=c.cap.text.split(/\s+/).length;
-    // For phrase mode: allow more anchors (÷3 instead of ÷phraseLen) for denser coverage
-    const max=phraseLen>1?Math.ceil(capWords/3):Math.ceil(capWords/3);
+    const max=Math.ceil(capWords/(phraseLen>1?phraseLen:3));
     if(used>=max) continue;
     chosen.push(c); chosenKeys.add(key); capCount.set(c.cap,used+1);
 
