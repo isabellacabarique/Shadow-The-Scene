@@ -753,8 +753,8 @@ async function proxyFetch(url){
 async function getYTCaptions(vid){
   // 0. Local server (transcript_server.py) — most reliable
   try{
-    setStatus('Conectando con el servidor local…');
-    const r=await fetch(`/transcript?v=${vid}`,{signal:AbortSignal.timeout(4000)});
+    setStatus('Buscando subtítulos de YouTube… (puede tardar hasta 30s)');
+    const r=await fetch(`/transcript?v=${vid}`,{signal:AbortSignal.timeout(28000)});
     if(r.ok){
       const j=await r.json();
       if(j.captions&&j.captions.length>3) return j.captions;
@@ -1286,10 +1286,10 @@ function initPlayer(){
   }else if(S.platform==='vimeo'){
     const f=document.createElement('iframe');
     const hParam=S.hash?`&h=${S.hash}`:'';
-    f.src=`https://player.vimeo.com/video/${S.vid}?api=1${hParam}`;
+    f.src=`https://player.vimeo.com/video/${S.vid}?api=1&playsinline=1${hParam}`;
     f.style.cssText='width:100%;height:100%;';
     f.frameBorder='0';f.allowFullscreen=true;
-    f.allow='autoplay';
+    f.allow='autoplay; fullscreen; picture-in-picture';
     document.getElementById('yt-wrapper').innerHTML='';
     document.getElementById('yt-wrapper').appendChild(f);
     S.vimeoIframe=f;
