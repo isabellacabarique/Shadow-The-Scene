@@ -409,8 +409,37 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-heigh
 </head>
 <body>
 
+<!-- ══ SCREEN 0: PASSWORD ══ -->
+<div id="screen-password" class="screen active">
+  <div class="center">
+    <div class="url-card" style="max-width:420px;">
+      <div style="display:flex;flex-direction:column;align-items:center;margin-bottom:24px;">
+        <div style="display:flex;align-items:center;gap:9px;line-height:1;">
+          <div style="display:flex;gap:4px;">
+            <span style="width:8px;height:8px;border-radius:50%;background:#fff;display:block;"></span>
+            <span style="width:8px;height:8px;border-radius:50%;background:#fff;display:block;"></span>
+            <span style="width:8px;height:8px;border-radius:50%;background:#fff;display:block;"></span>
+          </div>
+          <span style="font-family:'Nunito',sans-serif;font-size:1.05rem;font-weight:300;color:#fff;letter-spacing:.04em;">immersa academy</span>
+        </div>
+        <div style="font-family:'Nunito',sans-serif;font-size:.62rem;color:rgba(255,255,255,.55);letter-spacing:.06em;margin-top:3px;margin-left:42px;">by teacher Isa</div>
+      </div>
+      <div class="logo">🔐</div>
+      <h1 style="font-size:2rem;margin-bottom:8px;">Listening Lab</h1>
+      <p style="margin-bottom:28px;">Ingresa la contraseña para acceder</p>
+      <div class="url-row">
+        <input id="pw-input" class="url-input" type="password"
+          placeholder="Contraseña"
+          onkeydown="if(event.key==='Enter')checkPassword()"/>
+      </div>
+      <button class="btn-primary" style="width:100%;margin-top:4px;" onclick="checkPassword()">Entrar</button>
+      <div id="pw-error" class="url-error" style="display:none;">Contraseña incorrecta. Verifica con tu profe.</div>
+    </div>
+  </div>
+</div>
+
 <!-- ══ SCREEN 1: URL ══ -->
-<div id="screen-url" class="screen active">
+<div id="screen-url" class="screen">
   <!-- Barra superior izquierda -->
   <div class="brand-bar">
     <span class="brand-bar-title" onclick="show('screen-url')">Listening Lab &nbsp;|&nbsp; <span>Shadow the Scene</span></span>
@@ -639,6 +668,25 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-heigh
 </div>
 
 <script>
+// ── Password gate ──
+const LAB_PW='teacherisalab';
+function checkPassword(){
+  const val=document.getElementById('pw-input').value;
+  if(val===LAB_PW){
+    sessionStorage.setItem('lab_ok','1');
+    show('screen-url');
+  } else {
+    document.getElementById('pw-error').style.display='block';
+    document.getElementById('pw-input').value='';
+    document.getElementById('pw-input').focus();
+  }
+}
+// If already verified this session, skip password screen
+if(sessionStorage.getItem('lab_ok')==='1'){
+  document.getElementById('screen-password').classList.remove('active');
+  document.getElementById('screen-url').classList.add('active');
+}
+
 const S={
   url:'',vid:'',platform:'',hash:null,
   level:'',pct:10,phraseLen:1,mode:'selection',blankAll:false,showPct:0,
