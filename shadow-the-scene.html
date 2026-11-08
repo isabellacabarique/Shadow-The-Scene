@@ -1848,7 +1848,12 @@ function renderCap(cap,activeIdx,isCurrent){
     }else if(seg.isActive&&S.mode==='selection'){
       html+=`<span class="blank-sel" id="iblk-${seg.idx}" data-bi="${seg.idx}">${'_'.repeat(Math.max(4,seg.word.length))}</span>`;
     }else{
-      html+=`<span class="blank" style="opacity:.45">${'_'.repeat(Math.max(4,seg.word.length))}</span>`;
+      // In practice mode, show the actual word for non-active sentences
+      if(S.practiceMode){
+        html+=`<span style="opacity:.5;">${escHtml(seg.word)}</span>`;
+      }else{
+        html+=`<span class="blank" style="opacity:.45">${'_'.repeat(Math.max(4,seg.word.length))}</span>`;
+      }
     }
     pos=seg.end;
   }
