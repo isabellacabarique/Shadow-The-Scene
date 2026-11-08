@@ -269,11 +269,14 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-heigh
 .lbox{width:1.1em;height:1.5em;border-bottom:2px solid rgba(255,255,255,.35);
       display:inline-flex;align-items:center;justify-content:center;
       font-size:.92em;font-family:'Courier New',monospace;color:#fff;min-width:11px;
+      position:relative;
       transition:border-color .12s,color .12s;}
 .lbox.lbox-on{border-color:#64b5f6;}
 .lbox.lbox-ok{color:#a5d6a7;border-color:#66bb6a;background:rgba(76,175,80,.12);border-radius:2px;}
 .lbox.lbox-bad{color:#ef9a9a;border-color:#e53935;background:rgba(229,57,53,.12);border-radius:2px;}
 .lbox.lbox-locked{border-color:rgba(255,255,255,.18);}
+/* Ghost letter behind boxes in practice mode */
+.lbox[data-ghost]:not(.lbox-has-input)::before{content:attr(data-ghost);position:absolute;opacity:.22;color:#fff;pointer-events:none;}
 .lbox-hidden{position:absolute;left:0;top:0;width:100%;height:100%;
              opacity:.01;font-size:16px;border:none;background:transparent;
              outline:none;cursor:text;caret-color:transparent;}
@@ -1562,7 +1565,10 @@ function updateLboxes(bi,val){
   const wrap=document.getElementById(`lboxwrap-${bi}`);
   if(!wrap) return;
   const boxes=wrap.querySelectorAll('.lbox');
-  boxes.forEach((box,i)=>{box.textContent=val[i]||'';});
+  boxes.forEach((box,i)=>{
+    box.textContent=val[i]||'';
+    if(S.practiceMode) box.classList.toggle('lbox-has-input',!!(val[i]));
+  });
 }
 
 function lockLboxWord(bi,typed,wordStr){
@@ -1842,7 +1848,7 @@ function renderCap(cap,activeIdx,isCurrent){
         html+=`<input class="inline-blank sentence-blank" id="iblk-${seg.idx}" data-bi="${seg.idx}" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Escribe lo que escuchas…">`;
       }else{
         // Letter boxes: one box per character
-        const boxes=Array.from(seg.word).map((_,i)=>`<span class="lbox lbox-on" data-pos="${i}"></span>`).join('');
+        const boxes=Array.from(seg.word).map((ch,i)=>`<span class="lbox lbox-on" data-pos="${i}"${S.practiceMode?` data-ghost="${ch.replace(/"/g,'&quot;')}"`:''} ></span>`).join('');
         html+=`<span class="lbox-wrap" id="lboxwrap-${seg.idx}" data-bi="${seg.idx}" onclick="focusLboxWord(${seg.idx})">${boxes}<input class="lbox-hidden" id="iblk-${seg.idx}" data-bi="${seg.idx}" maxlength="${seg.word.length}" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false"></span>`;
       }
     }else if(seg.isActive&&S.mode==='selection'){
