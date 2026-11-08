@@ -214,7 +214,7 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-heigh
 .fb.bad{background:rgba(229,57,53,.25);color:#ef9a9a;display:block;}
 .sentence-bar{padding:18px 28px;background:rgba(0,0,0,.28);
   font-family:'Montserrat',sans-serif;font-size:1.18rem;line-height:2.1;
-  min-height:120px;text-align:center;}
+  min-height:120px;text-align:center;overflow:hidden;display:flex;flex-direction:column;}
 .cap-line{padding:3px 0;}
 .cap-line.prev{color:rgba(255,255,255,.38);font-size:1rem;}
 .cap-line.current{color:#fff;font-size:1.22rem;font-weight:500;}
@@ -263,6 +263,31 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-heigh
 .inline-blank.bad{border-color:#64b5f6;color:#64b5f6;background:rgba(76,142,255,.1);}
 .inline-blank:disabled{cursor:default;}
 .sentence-blank{display:block;width:100%;box-sizing:border-box;min-width:unset;text-align:left;padding:6px 10px;border-radius:6px;margin:4px 0;font-size:.95rem;}
+
+/* ── LETTER BOX INPUT ── */
+.lbox-wrap{display:inline-flex;gap:3px;vertical-align:middle;cursor:text;position:relative;padding:0 1px;}
+.lbox{width:1.1em;height:1.5em;border-bottom:2px solid rgba(255,255,255,.35);
+      display:inline-flex;align-items:center;justify-content:center;
+      font-size:.92em;font-family:'Courier New',monospace;color:#fff;min-width:11px;
+      transition:border-color .12s,color .12s;}
+.lbox.lbox-on{border-color:#64b5f6;}
+.lbox.lbox-ok{color:#a5d6a7;border-color:#66bb6a;background:rgba(76,175,80,.12);border-radius:2px;}
+.lbox.lbox-bad{color:#ef9a9a;border-color:#e53935;background:rgba(229,57,53,.12);border-radius:2px;}
+.lbox.lbox-locked{border-color:rgba(255,255,255,.18);}
+.lbox-hidden{position:absolute;left:0;top:0;width:100%;height:100%;
+             opacity:.01;font-size:16px;border:none;background:transparent;
+             outline:none;cursor:text;caret-color:transparent;}
+
+/* ── PRACTICE TRANSCRIPT ── */
+.sentence-bar.practice-bar{padding:0;min-height:200px;max-height:45vh;text-align:left;}
+.practice-transcript{flex:1;overflow-y:auto;padding:12px 16px;display:flex;flex-direction:column;gap:8px;scroll-behavior:smooth;}
+.practice-line{padding:8px 12px;border-radius:8px;font-size:.93rem;line-height:1.9;
+               color:rgba(255,255,255,.45);transition:background .2s,color .2s;}
+.practice-line.pline-done{color:rgba(255,255,255,.55);}
+.practice-line.pline-current{background:rgba(76,142,255,.12);color:#fff;
+                              border:1px solid rgba(76,142,255,.3);border-radius:8px;}
+.practice-line.pline-future{color:rgba(255,255,255,.3);}
+.level-card.bg-teal{background:linear-gradient(135deg,#009688,#00695c);}
 
 /* ── INLINE BLANK (SELECTION) ── */
 .blank-sel{
@@ -499,6 +524,10 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-heigh
         <h3>Experto</h3><p>Solo las primeras palabras visibles · 20 seg · 1 vida</p>
         <div class="licon">😵</div>
       </div>
+      <div class="level-card bg-teal" style="grid-column:1/-1;" onclick="pickPractice()">
+        <h3>🎯 Práctica</h3><p>Ve la transcripción completa y completa cada oración mientras el video avanza</p>
+        <div class="licon">📜</div>
+      </div>
     </div>
   </div>
 </div>
@@ -689,7 +718,7 @@ if(sessionStorage.getItem('lab_ok')==='1'){
 
 const S={
   url:'',vid:'',platform:'',hash:null,
-  level:'',pct:10,phraseLen:1,mode:'selection',blankAll:false,showPct:0,
+  level:'',pct:10,phraseLen:1,mode:'selection',blankAll:false,showPct:0,practiceMode:false,
   captions:[],blanks:[],
   idx:0,score:0,cor:0,err:0,
   bonus:1,streak:0,
@@ -755,7 +784,20 @@ function pickLevel(lvl,pct,phraseLen,maxTime,lives,blankAll,showPct){
   S.initLives=lives||3;
   S.blankAll=!!blankAll;
   S.showPct=showPct||0;
+  S.practiceMode=false;
   show('screen-mode');
+}
+
+function pickPractice(){
+  S.level='practice';S.pct=0;S.phraseLen=1;
+  S.initMaxTime=S.maxTime=60;
+  S.initLives=99;
+  S.blankAll=true;
+  S.showPct=30; // show first 30% of words
+  S.practiceMode=true;
+  S.mode='typing';
+  show('screen-loading');
+  loadCaptions();
 }
 
 function updateLevelDescs(total){
@@ -1493,9 +1535,50 @@ function showBlank(idx){
 }
 
 function setupTypGroup(group){
-  // Typing: inputs are rendered inline in sentence-bar by buildSentenceBar/renderCap
-  // Just focus the first inline input
-  setTimeout(()=>document.getElementById(`iblk-${group[0]}`)?.focus(),80);
+  S._typGroup=group;
+  S._typTyped=group.map(()=>'');
+  S._typWordIdx=0;
+  setTimeout(()=>focusLboxWord(group[0]),80);
+}
+
+function focusLboxWord(bi){
+  const inp=document.getElementById(`iblk-${bi}`);
+  if(inp&&!inp.disabled) inp.focus();
+  // Highlight active word's boxes
+  if(S._typGroup){
+    S._typGroup.forEach(b=>{
+      const wrap=document.getElementById(`lboxwrap-${b}`);
+      if(!wrap) return;
+      wrap.querySelectorAll('.lbox').forEach(lb=>{
+        if(!lb.classList.contains('lbox-ok')&&!lb.classList.contains('lbox-bad')&&!lb.classList.contains('lbox-locked')){
+          lb.classList.toggle('lbox-on',b===bi);
+        }
+      });
+    });
+  }
+}
+
+function updateLboxes(bi,val){
+  const wrap=document.getElementById(`lboxwrap-${bi}`);
+  if(!wrap) return;
+  const boxes=wrap.querySelectorAll('.lbox');
+  boxes.forEach((box,i)=>{box.textContent=val[i]||'';});
+}
+
+function lockLboxWord(bi,typed,wordStr){
+  const inp=document.getElementById(`iblk-${bi}`);
+  if(inp) inp.disabled=true;
+  const wrap=document.getElementById(`lboxwrap-${bi}`);
+  if(!wrap) return;
+  const boxes=wrap.querySelectorAll('.lbox');
+  const correct=wordStr.split('');
+  const given=typed.split('');
+  boxes.forEach((box,i)=>{
+    box.textContent=given[i]||'';
+    box.classList.remove('lbox-on');
+    const match=(given[i]||'').toLowerCase()===(correct[i]||'').toLowerCase();
+    box.classList.add(match?'lbox-ok':'lbox-bad');
+  });
 }
 
 function setupSelGroup(group){
@@ -1566,19 +1649,70 @@ function submitSelInline(group){
 function attachInlineInputs(activeIdx){
   if(S.answered) return;
   const group=sentenceGroup(activeIdx);
-  // Hide sel-options-bar if typing mode
   if(S.mode==='typing') document.getElementById('sel-options-bar').style.display='none';
-  group.forEach((bi,i)=>{
+
+  // fullSentence mode (single big input) — keep old behavior
+  const firstBlank=S.blanks[group[0]];
+  if(firstBlank&&firstBlank.fullSentence){
+    group.forEach((bi,i)=>{
+      const inp=document.getElementById(`iblk-${bi}`);
+      if(!inp) return;
+      inp.addEventListener('keydown',e=>{
+        if(e.key==='Enter'){e.preventDefault();submitInlineTyping(group);}
+      });
+    });
+    setTimeout(()=>document.getElementById(`iblk-${group[0]}`)?.focus(),80);
+    return;
+  }
+
+  // Letter-box mode
+  group.forEach((bi,gi)=>{
     const inp=document.getElementById(`iblk-${bi}`);
     if(!inp) return;
-    inp.addEventListener('keydown',e=>{
-      if(e.key==='Enter'){
-        e.preventDefault();
-        if(i<group.length-1) document.getElementById(`iblk-${group[i+1]}`)?.focus();
-        else submitInlineTyping(group);
+    inp.addEventListener('input',()=>{
+      if(S.answered||inp.disabled) return;
+      // Strip non-letter chars
+      let val=inp.value.replace(/[^a-zA-Z''\-]/g,'');
+      inp.value=val;
+      if(S._typTyped) S._typTyped[gi]=val;
+      updateLboxes(bi,val);
+      const word=S.blanks[bi].word;
+      if(val.length>=word.length){
+        // Word complete
+        const typed=val.slice(0,word.length);
+        inp.value=typed;
+        lockLboxWord(bi,typed,word);
+        const ok=norm(typed)===norm(word);
+        S.blankResults[bi]={ok,correct:word,given:typed};
+        if(gi+1<group.length){
+          setTimeout(()=>{
+            if(S._typWordIdx!==undefined) S._typWordIdx=gi+1;
+            focusLboxWord(group[gi+1]);
+          },150);
+        } else {
+          setTimeout(()=>submitLetterTyping(group),250);
+        }
       }
     });
+    // Prevent backspace going to previous word
+    inp.addEventListener('keydown',e=>{
+      if(e.key==='Enter'){e.preventDefault();}
+    });
   });
+}
+
+function submitLetterTyping(group){
+  if(S.answered) return;
+  S.answered=true; clearTimer(); clearSentenceTimer();
+  const results=group.map(bi=>{
+    const r=S.blankResults[bi];
+    if(r) return{blankIdx:bi,...r};
+    // Not typed (time ran out)
+    const word=S.blanks[bi].word;
+    lockLboxWord(bi,'',word);
+    return{blankIdx:bi,given:'',correct:word,ok:false};
+  });
+  applyGroupResult(results);
 }
 
 function submitInlineTyping(group){
@@ -1647,16 +1781,38 @@ function escHtml(t){return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(
 function buildSentenceBar(activeIdx){
   const currentCap=S.blanks[activeIdx].cap;
   const capIdx=S.captions.indexOf(currentCap);
-  let html='';
-  for(let i=Math.max(0,capIdx-2);i<capIdx;i++){
-    html+=`<div class="cap-line prev">${renderCap(S.captions[i],activeIdx,false)}</div>`;
+  const bar=document.getElementById('sentence-bar');
+  bar.classList.toggle('practice-bar',!!S.practiceMode);
+
+  if(S.practiceMode){
+    // Show full scrollable transcript
+    let html='<div class="practice-transcript" id="practice-scroll">';
+    S.captions.forEach((cap,i)=>{
+      let cls='practice-line';
+      if(i<capIdx) cls+=' pline-done';
+      else if(i===capIdx) cls+=' pline-current';
+      else cls+=' pline-future';
+      const id=i===capIdx?'pline-active':'';
+      html+=`<div class="${cls}" ${id?`id="${id}"`:''}>${renderCap(cap,activeIdx,i===capIdx)}</div>`;
+    });
+    html+='</div>';
+    bar.innerHTML=html;
+    // Scroll active line into view
+    setTimeout(()=>{
+      const el=document.getElementById('pline-active');
+      if(el) el.scrollIntoView({behavior:'smooth',block:'center'});
+    },100);
+  } else {
+    let html='';
+    for(let i=Math.max(0,capIdx-2);i<capIdx;i++){
+      html+=`<div class="cap-line prev">${renderCap(S.captions[i],activeIdx,false)}</div>`;
+    }
+    html+=`<div class="cap-line current">${renderCap(currentCap,activeIdx,true)}</div>`;
+    if(capIdx+1<S.captions.length){
+      html+=`<div class="cap-line next">${renderCap(S.captions[capIdx+1],activeIdx,false)}</div>`;
+    }
+    bar.innerHTML=html;
   }
-  html+=`<div class="cap-line current">${renderCap(currentCap,activeIdx,true)}</div>`;
-  if(capIdx+1<S.captions.length){
-    html+=`<div class="cap-line next">${renderCap(S.captions[capIdx+1],activeIdx,false)}</div>`;
-  }
-  document.getElementById('sentence-bar').innerHTML=html;
-  // Attach inline interaction after DOM update
   if(!S.answered) attachInlineInputs(activeIdx);
 }
 
@@ -1685,8 +1841,9 @@ function renderCap(cap,activeIdx,isCurrent){
       if(seg.fullSentence){
         html+=`<input class="inline-blank sentence-blank" id="iblk-${seg.idx}" data-bi="${seg.idx}" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Escribe lo que escuchas…">`;
       }else{
-        const w=Math.max(5,seg.word.length+3);
-        html+=`<input class="inline-blank" id="iblk-${seg.idx}" data-bi="${seg.idx}" style="width:${w}ch" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">`;
+        // Letter boxes: one box per character
+        const boxes=Array.from(seg.word).map((_,i)=>`<span class="lbox lbox-on" data-pos="${i}"></span>`).join('');
+        html+=`<span class="lbox-wrap" id="lboxwrap-${seg.idx}" data-bi="${seg.idx}" onclick="focusLboxWord(${seg.idx})">${boxes}<input class="lbox-hidden" id="iblk-${seg.idx}" data-bi="${seg.idx}" maxlength="${seg.word.length}" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false"></span>`;
       }
     }else if(seg.isActive&&S.mode==='selection'){
       html+=`<span class="blank-sel" id="iblk-${seg.idx}" data-bi="${seg.idx}">${'_'.repeat(Math.max(4,seg.word.length))}</span>`;
@@ -1730,8 +1887,16 @@ function timeUp(){
     S.blankResults[blankIdx]={ok:false,correct,given:''};
     S.err++;
     if(S.mode==='typing'){
-      const inp=document.getElementById(`iblk-${blankIdx}`);
-      if(inp){inp.value=correct;inp.disabled=true;inp.classList.add('bad');}
+      const wrap=document.getElementById(`lboxwrap-${blankIdx}`);
+      if(wrap){
+        // Show correct word in red boxes (time ran out)
+        lockLboxWord(blankIdx,'',correct);
+        const boxes=wrap.querySelectorAll('.lbox');
+        boxes.forEach((box,i)=>{box.textContent=correct[i]||'';box.classList.remove('lbox-ok');box.classList.add('lbox-bad');});
+      } else {
+        const inp=document.getElementById(`iblk-${blankIdx}`);
+        if(inp){inp.value=correct;inp.disabled=true;inp.classList.add('bad');}
+      }
     } else {
       const span=document.getElementById(`iblk-${blankIdx}`);
       if(span){span.textContent=correct;span.style.color='#64b5f6';span.style.borderBottomColor='#4c8eff';}
