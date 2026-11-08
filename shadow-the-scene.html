@@ -1952,7 +1952,8 @@ function showBuyLifeInline(nextIdx){
 function updateLives(){
   const el=document.getElementById('g-lives');
   if(!el) return;
-  if(S.practiceMode){el.textContent='∞';return;}
+  if(S.practiceMode){el.style.display='none';return;}
+  el.style.display='';
   el.textContent='❤️'.repeat(Math.max(0,S.lives))+'🖤'.repeat(Math.max(0,S.initLives-S.lives));
 }
 
