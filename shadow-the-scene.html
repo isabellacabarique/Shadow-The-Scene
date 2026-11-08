@@ -793,11 +793,11 @@ function pickPractice(){
   S.initMaxTime=S.maxTime=60;
   S.initLives=99;
   S.blankAll=true;
-  S.showPct=30; // show first 30% of words
+  S.showPct=30;
   S.practiceMode=true;
   S.mode='typing';
   show('screen-loading');
-  loadCaptions();
+  loadAndPrepare();
 }
 
 function updateLevelDescs(total){
