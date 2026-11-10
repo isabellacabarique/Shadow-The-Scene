@@ -56,6 +56,29 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-heigh
 .url-error{color:#ef9a9a;font-size:.85rem;margin-top:4px;display:none;
   padding:8px;background:rgba(229,57,53,.15);border-radius:8px;text-align:left;}
 
+/* ── TIME RANGE PANEL ── */
+.range-panel{display:none;width:100%;margin-top:10px;
+  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);
+  border-radius:14px;padding:14px 16px;text-align:left;animation:fadeUp .25s ease;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.range-panel.active{display:block;}
+.range-title{font-size:.8rem;color:rgba(255,255,255,.55);margin-bottom:10px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;}
+.range-options{display:flex;flex-direction:column;gap:7px;}
+.range-opt{display:flex;align-items:center;gap:10px;cursor:pointer;padding:9px 12px;
+  border-radius:10px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);
+  transition:background .15s,border-color .15s;flex-wrap:wrap;}
+.range-opt:hover{background:rgba(255,255,255,.09);}
+.range-opt.selected{background:rgba(100,181,246,.12);border-color:rgba(100,181,246,.4);}
+.range-opt input[type=radio]{accent-color:#64b5f6;width:15px;height:15px;cursor:pointer;flex-shrink:0;}
+.range-opt label{cursor:pointer;font-size:.86rem;color:#fff;flex:1;}
+.range-custom-row{display:none;width:100%;margin-top:6px;padding-left:25px;
+  align-items:center;gap:6px;font-size:.82rem;color:rgba(255,255,255,.6);}
+.range-custom-row.show{display:flex;}
+.range-min{width:58px;padding:6px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.2);
+  background:rgba(255,255,255,.08);color:#fff;font-size:.85rem;text-align:center;outline:none;}
+.range-min:focus{border-color:#64b5f6;}
+.range-min::-webkit-inner-spin-button,.range-min::-webkit-outer-spin-button{opacity:.5;}
+
 /* ── SEARCH VIDEOS ── */
 .search-section{margin-bottom:20px;text-align:left;}
 .search-box{display:flex;gap:8px;align-items:center;}
@@ -514,6 +537,33 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-heigh
         </div>
         <button class="btn-primary" style="width:100%" onclick="handleUrl()">▶ Comenzar Actividad</button>
         <div id="url-error" class="url-error"></div>
+
+        <!-- ── Selector de rango ── -->
+        <div id="range-panel" class="range-panel">
+          <div class="range-title">¿Qué parte quieres practicar?</div>
+          <div class="range-options">
+            <div class="range-opt selected" id="ropt-all" onclick="selectRangeOpt('all')">
+              <input type="radio" name="vidrange" value="all" checked>
+              <label>Todo el video 🎬</label>
+            </div>
+            <div class="range-opt" id="ropt-first5" onclick="selectRangeOpt('first5')">
+              <input type="radio" name="vidrange" value="first5">
+              <label>Solo los primeros 5 minutos ⚡</label>
+            </div>
+            <div class="range-opt" id="ropt-custom" onclick="selectRangeOpt('custom')">
+              <input type="radio" name="vidrange" value="custom">
+              <label>Elegir mi propio segmento ✂️</label>
+              <div class="range-custom-row" id="range-custom-row">
+                del min <input class="range-min" id="range-from" type="number" min="0" max="999" value="0"
+                  onclick="event.stopPropagation()" oninput="event.stopPropagation()">
+                al min <input class="range-min" id="range-to" type="number" min="1" max="999" value="10"
+                  onclick="event.stopPropagation()" oninput="event.stopPropagation()">
+              </div>
+            </div>
+          </div>
+          <button class="btn-primary" style="width:100%;margin-top:12px;font-size:.9rem;padding:12px 20px;" onclick="confirmRange()">Continuar →</button>
+        </div>
+
         <div class="badges">
           <span class="badge">▶ YouTube</span>
           <span class="badge">▶ Vimeo</span>
@@ -561,6 +611,10 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-heigh
       <div class="level-header" style="padding:0;">Selecciona un Nivel</div>
     </div>
     <div class="level-grid">
+      <div class="level-card bg-teal" onclick="pickPractice()">
+        <h3>💪 Práctica</h3><p>Ve la transcripción completa y completa cada oración mientras el video avanza</p>
+        <div class="licon">📜</div>
+      </div>
       <div class="level-card bg-green"  onclick="pickLevel('beginner',0,1,30,3,true,70)">
         <h3>Principiante</h3><p id="ld-b">70% de cada oración visible · 30 seg · 3 vidas</p>
         <div class="licon">😊</div>
@@ -576,10 +630,6 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-heigh
       <div class="level-card bg-red" onclick="pickLevel('expert',0,1,20,1,true,0)">
         <h3>Experto</h3><p>Solo las primeras palabras visibles · 20 seg · 1 vida</p>
         <div class="licon">😵</div>
-      </div>
-      <div class="level-card bg-teal" onclick="pickPractice()">
-        <h3>💪 Práctica</h3><p>Ve la transcripción completa y completa cada oración mientras el video avanza</p>
-        <div class="licon">📜</div>
       </div>
     </div>
   </div>
@@ -754,6 +804,7 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-heigh
 const S={
   url:'',vid:'',platform:'',hash:null,
   level:'',pct:10,phraseLen:1,mode:'selection',blankAll:false,showPct:0,practiceMode:false,
+  startSec:0,endSec:0,
   captions:[],blanks:[],
   idx:0,score:0,cor:0,err:0,
   bonus:1,streak:0,
@@ -800,10 +851,48 @@ function handleUrl(){
   const {platform,vid,hash}=detect(raw);
   if(!platform){setUrlErr('URL no reconocida. Usa youtube.com, youtu.be o vimeo.com.');return;}
   S.url=raw;S.vid=vid;S.hash=hash||null;S.platform=platform;
+  // Show time range picker instead of going directly to level screen
+  const panel=document.getElementById('range-panel');
+  panel.classList.add('active');
+  panel.scrollIntoView({behavior:'smooth',block:'nearest'});
+  // Reset range UI to default
+  selectRangeOpt('all');
+}
+
+function selectRangeOpt(type){
+  ['all','first5','custom'].forEach(t=>{
+    const el=document.getElementById('ropt-'+t);
+    if(!el)return;
+    el.classList.toggle('selected',t===type);
+    el.querySelector('input[type=radio]').checked=(t===type);
+  });
+  const customRow=document.getElementById('range-custom-row');
+  if(customRow) customRow.classList.toggle('show',type==='custom');
+  S._rangeType=type;
+}
+
+function confirmRange(){
+  const type=S._rangeType||'all';
+  if(type==='all'){
+    S.startSec=0; S.endSec=0;
+  }else if(type==='first5'){
+    S.startSec=0; S.endSec=300;
+  }else{
+    const from=parseInt(document.getElementById('range-from').value)||0;
+    const to=parseInt(document.getElementById('range-to').value)||10;
+    if(to<=from){alert('El minuto final debe ser mayor que el inicial.');return;}
+    S.startSec=from*60; S.endSec=to*60;
+  }
+  document.getElementById('range-panel').classList.remove('active');
   show('screen-level');
 }
 function setUrlErr(m){const e=document.getElementById('url-error');e.textContent=m;e.style.display='block';}
-function pickFeaturedVideo(url){document.getElementById('url-input').value=url;handleUrl();}
+function pickFeaturedVideo(url){
+  document.getElementById('url-input').value=url;
+  // Scroll left panel into view on mobile so user sees the range picker
+  document.querySelector('.url-left').scrollIntoView({behavior:'smooth',block:'start'});
+  handleUrl();
+}
 
 const FEATURED_VIDEOS=[
   {url:'https://vimeo.com/1204982391/9260f22dd5?share=copy',title:'Friends · Episodio 1',sub:'🇺🇸 English · Intermediate'},
@@ -943,7 +1032,15 @@ async function loadAndPrepare(){
   }
 }
 
-function finishLoad(caps){
+function finishLoad(allCaps){
+  // Apply time range filter
+  let caps=allCaps;
+  if(S.endSec>0){
+    caps=allCaps.filter(c=>c.start<S.endSec && (c.start+(c.dur||3))>S.startSec);
+  }else if(S.startSec>0){
+    caps=allCaps.filter(c=>(c.start+(c.dur||3))>S.startSec);
+  }
+  if(caps.length===0){show('screen-manual');return;}
   S.captions=caps;
   const totalWords=caps.reduce((a,c)=>a+c.text.split(/\s+/).length,0);
   updateLevelDescs(totalWords);
@@ -2224,8 +2321,10 @@ function restart(){
 function goHome(){
   clearTimer();
   S.captions=[];S.blanks=[];
+  S.startSec=0;S.endSec=0;S._rangeType='all';
   document.getElementById('url-input').value='';
   document.getElementById('url-error').style.display='none';
+  document.getElementById('range-panel').classList.remove('active');
   document.getElementById('transcript-area').value='';
   show('screen-url');
 }
