@@ -811,7 +811,7 @@ function initFeaturedVideos(){
     const card=document.createElement('div');
     card.className='vid-card';
     card.onclick=()=>pickFeaturedVideo(v.url);
-    card.innerHTML=`<div class="vid-thumb" style="display:flex;align-items:center;justify-content:center;background:#0d1b3e;"><svg width="36" height="36" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="rgba(255,255,255,.12)"/><path d="M10 8l6 4-6 4V8z" fill="white"/></svg></div><div class="vid-info"><div class="vid-title">${v.title}</div><div class="vid-sub">${v.sub}</div></div>`;
+    card.innerHTML=`<div class="vid-thumb" style="display:flex;align-items:center;justify-content:center;background:#0d1b3e;"><svg width="36" height="36" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="rgba(255,255,255,.12)"/><path d="M10 8l6 4-6 4V8z" fill="white"/></svg></div><div class="vid-info"><div class="vid-title">${v.title}</div></div>`;
     grid.appendChild(card);
     const ourl='https://vimeo.com/api/oembed.json?url='+encodeURIComponent(v.url);
     fetch(ourl).then(r=>r.json()).then(d=>{
@@ -844,7 +844,7 @@ function searchVideos(){
     const card=document.createElement('div');
     card.className='vid-card';
     card.onclick=()=>pickFeaturedVideo(v.url);
-    card.innerHTML=`<div class="vid-thumb" style="display:flex;align-items:center;justify-content:center;background:#0d1b3e;"><svg width="36" height="36" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="rgba(255,255,255,.12)"/><path d="M10 8l6 4-6 4V8z" fill="white"/></svg></div><div class="vid-info"><div class="vid-title">${v.title}</div><div class="vid-sub">${v.sub}</div></div>`;
+    card.innerHTML=`<div class="vid-thumb" style="display:flex;align-items:center;justify-content:center;background:#0d1b3e;"><svg width="36" height="36" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="rgba(255,255,255,.12)"/><path d="M10 8l6 4-6 4V8z" fill="white"/></svg></div><div class="vid-info"><div class="vid-title">${v.title}</div></div>`;
     grid.appendChild(card);
     const ourl='https://vimeo.com/api/oembed.json?url='+encodeURIComponent(v.url);
     fetch(ourl).then(r=>r.json()).then(d=>{
