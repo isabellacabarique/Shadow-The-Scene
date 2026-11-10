@@ -51,8 +51,23 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-heigh
 .url-error{color:#ef9a9a;font-size:.85rem;margin-top:8px;display:none;
   padding:8px;background:rgba(229,57,53,.15);border-radius:8px;}
 
+/* ── SEARCH VIDEOS ── */
+.search-section{margin-top:24px;text-align:left;}
+.search-box{display:flex;gap:8px;align-items:center;}
+.search-input{flex:1;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);
+  border-radius:10px;padding:10px 14px;font-size:.88rem;color:#fff;outline:none;
+  transition:border-color .2s;}
+.search-input::placeholder{color:rgba(255,255,255,.35);}
+.search-input:focus{border-color:rgba(255,255,255,.45);}
+.search-btn{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);
+  border-radius:10px;padding:10px 16px;color:#fff;cursor:pointer;font-size:.88rem;
+  white-space:nowrap;transition:background .15s;}
+.search-btn:hover{background:rgba(255,255,255,.2);}
+.search-results{margin-top:12px;}
+.search-empty{font-size:.82rem;color:rgba(255,255,255,.4);padding:10px 0;}
+
 /* ── FEATURED VIDEOS ── */
-.featured-section{margin-top:28px;text-align:left;}
+.featured-section{margin-top:24px;text-align:left;}
 .featured-label{font-size:.72rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
   color:rgba(255,255,255,.45);margin-bottom:12px;}
 .vid-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
@@ -484,6 +499,18 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-heigh
       <button class="btn-primary" style="width:100%" onclick="handleUrl()">▶ Comenzar Actividad</button>
       <div id="url-error" class="url-error"></div>
 
+      <!-- Search videos -->
+      <div class="search-section">
+        <div class="featured-label">🔍 Buscar videos</div>
+        <div class="search-box">
+          <input class="search-input" id="search-input" type="text"
+            placeholder="Busca por tema, serie o nivel… ej: Friends, news, grammar"
+            onkeydown="if(event.key==='Enter')searchVideos()">
+          <button class="search-btn" onclick="searchVideos()">Buscar</button>
+        </div>
+        <div class="search-results" id="search-results"></div>
+      </div>
+
       <!-- Featured videos -->
       <div class="featured-section">
         <div class="featured-label">🎬 Videos listos para practicar</div>
@@ -777,6 +804,38 @@ function initFeaturedVideos(){
 }
 
 document.addEventListener('DOMContentLoaded',initFeaturedVideos);
+
+function searchVideos(){
+  const q=document.getElementById('search-input').value.trim().toLowerCase();
+  const container=document.getElementById('search-results');
+  container.innerHTML='';
+  if(!q)return;
+  const matches=FEATURED_VIDEOS.filter(v=>
+    v.title.toLowerCase().includes(q)||v.sub.toLowerCase().includes(q)
+  );
+  if(matches.length===0){
+    container.innerHTML=`<div class="search-empty">No encontramos videos con ese término en nuestra biblioteca.<br>¿Tienes el link del video? Pégalo arriba y empieza a practicar.</div>`;
+    return;
+  }
+  const grid=document.createElement('div');
+  grid.className='vid-grid';
+  matches.forEach(v=>{
+    const card=document.createElement('div');
+    card.className='vid-card';
+    card.onclick=()=>pickFeaturedVideo(v.url);
+    card.innerHTML=`<div class="vid-thumb" style="display:flex;align-items:center;justify-content:center;background:#0d1b3e;"><svg width="36" height="36" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="rgba(255,255,255,.12)"/><path d="M10 8l6 4-6 4V8z" fill="white"/></svg></div><div class="vid-info"><div class="vid-title">${v.title}</div><div class="vid-sub">${v.sub}</div></div>`;
+    grid.appendChild(card);
+    const ourl='https://vimeo.com/api/oembed.json?url='+encodeURIComponent(v.url);
+    fetch(ourl).then(r=>r.json()).then(d=>{
+      if(d.thumbnail_url){
+        const src=d.thumbnail_url.replace(/(_\d+x\d+)(\?|$)/,'_640x360$2');
+        card.querySelector('.vid-thumb').innerHTML=`<img src="${src}" alt="${d.title||v.title}" style="width:100%;height:100%;object-fit:cover;display:block;">`;
+      }
+      if(d.title) card.querySelector('.vid-title').textContent=d.title;
+    }).catch(()=>{});
+  });
+  container.appendChild(grid);
+}
 
 function detect(url){
   let m;
