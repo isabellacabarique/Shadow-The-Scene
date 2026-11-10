@@ -533,9 +533,10 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-heigh
         <p class="tagline">Mejora tu inglés con videos reales</p>
         <div class="url-row">
           <input id="url-input" class="url-input" type="text"
-            placeholder="Pega aquí el link del video" />
+            placeholder="Pega aquí el link del video"
+            onpaste="setTimeout(handleUrl,80)"
+            onkeydown="if(event.key==='Enter')handleUrl()" />
         </div>
-        <button class="btn-primary" style="width:100%" onclick="handleUrl()">▶ Comenzar Actividad</button>
         <div id="url-error" class="url-error"></div>
 
         <!-- ── Selector de rango ── -->
