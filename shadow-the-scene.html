@@ -32,27 +32,31 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-heigh
 
 /* ── URL SCREEN ── */
 .url-card{background:rgba(30,53,100,.82);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
-  border-radius:24px;padding:52px 56px;max-width:680px;
-  width:100%;box-shadow:0 24px 72px rgba(0,0,0,.5);text-align:center;
-  border:1px solid rgba(255,255,255,.1);}
-.logo{font-size:4rem;margin-bottom:14px;}
-.url-card h1{font-size:2.6rem;margin-bottom:10px;
+  border-radius:24px;max-width:1080px;width:100%;
+  box-shadow:0 24px 72px rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.1);
+  display:flex;overflow:hidden;}
+.url-left{width:38%;padding:48px 40px;display:flex;flex-direction:column;
+  justify-content:center;align-items:center;text-align:center;gap:14px;
+  border-right:1px solid rgba(255,255,255,.08);flex-shrink:0;}
+.url-right{flex:1;padding:36px 36px;overflow-y:auto;display:flex;flex-direction:column;justify-content:center;}
+.logo{font-size:3.6rem;}
+.url-card h1{font-size:2.2rem;
   background:linear-gradient(90deg,#64b5f6,#a78bfa);
   -webkit-background-clip:text;-webkit-text-fill-color:transparent;}
-.url-card>p{color:var(--light);margin-bottom:32px;font-size:1rem;}
-.url-row{display:flex;gap:10px;margin-bottom:12px;}
+.url-card .tagline{color:var(--light);font-size:.95rem;}
+.url-row{display:flex;gap:10px;width:100%;}
 .url-input{flex:1;padding:14px 18px;border-radius:12px;border:2px solid rgba(255,255,255,.2);
   background:rgba(255,255,255,.08);color:#fff;font-size:1rem;outline:none;transition:border-color .2s;}
 .url-input:focus{border-color:#64b5f6;}
 .url-input::placeholder{color:rgba(255,255,255,.35);}
-.badges{display:flex;gap:10px;justify-content:center;margin-top:16px;flex-wrap:wrap;}
+.badges{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;}
 .badge{padding:5px 14px;border-radius:20px;font-size:.78rem;
   background:rgba(255,255,255,.1);color:var(--light);}
-.url-error{color:#ef9a9a;font-size:.85rem;margin-top:8px;display:none;
-  padding:8px;background:rgba(229,57,53,.15);border-radius:8px;}
+.url-error{color:#ef9a9a;font-size:.85rem;margin-top:4px;display:none;
+  padding:8px;background:rgba(229,57,53,.15);border-radius:8px;text-align:left;}
 
 /* ── SEARCH VIDEOS ── */
-.search-section{margin-top:24px;text-align:left;}
+.search-section{margin-bottom:20px;text-align:left;}
 .search-box{display:flex;gap:8px;align-items:center;}
 .search-input{flex:1;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);
   border-radius:10px;padding:10px 14px;font-size:.88rem;color:#fff;outline:none;
@@ -67,10 +71,10 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-heigh
 .search-empty{font-size:.82rem;color:rgba(255,255,255,.4);padding:10px 0;}
 
 /* ── FEATURED VIDEOS ── */
-.featured-section{margin-top:24px;text-align:left;}
+.featured-section{text-align:left;}
 .featured-label{font-size:.72rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
   color:rgba(255,255,255,.45);margin-bottom:12px;}
-.vid-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.vid-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
 .vid-card{border-radius:12px;overflow:hidden;cursor:pointer;
   border:1px solid rgba(255,255,255,.12);transition:transform .18s,box-shadow .18s;background:#0d1b3e;}
 .vid-card:hover{transform:translateY(-3px);box-shadow:0 10px 30px rgba(0,0,0,.45);}
@@ -372,10 +376,12 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-heigh
 
   /* ── Pantalla principal ── */
   #screen-url .center{padding:12px 10px;}
-  .url-card{padding:28px 18px;border-radius:16px;max-width:100%;}
+  .url-card{flex-direction:column;border-radius:16px;max-width:100%;}
+  .url-left{width:100%;border-right:none;border-bottom:1px solid rgba(255,255,255,.08);padding:32px 20px;}
+  .url-right{padding:24px 20px;}
   .url-card h1{font-size:1.8rem;}
-  .url-card>p{font-size:.9rem;margin-bottom:20px;}
   .url-row{flex-direction:column;}
+  .vid-grid{grid-template-columns:1fr 1fr;}
   .btn-primary{font-size:.95rem;padding:13px 20px;}
 
   /* ── Pantalla de nivel ── */
@@ -476,48 +482,60 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-heigh
   </div>
   <div class="center">
     <div class="url-card">
-      <!-- Logo academia -->
-      <div style="display:flex;flex-direction:column;align-items:center;margin-bottom:24px;">
-        <div style="display:flex;align-items:center;gap:9px;line-height:1;">
-          <div style="display:flex;gap:4px;">
-            <span style="width:8px;height:8px;border-radius:50%;background:#fff;display:block;"></span>
-            <span style="width:8px;height:8px;border-radius:50%;background:#fff;display:block;"></span>
-            <span style="width:8px;height:8px;border-radius:50%;background:#fff;display:block;"></span>
+
+      <!-- ── PANEL IZQUIERDO ── -->
+      <div class="url-left">
+        <!-- Logo academia -->
+        <div>
+          <div style="display:flex;align-items:center;gap:9px;line-height:1;justify-content:center;">
+            <div style="display:flex;gap:4px;">
+              <span style="width:8px;height:8px;border-radius:50%;background:#fff;display:block;"></span>
+              <span style="width:8px;height:8px;border-radius:50%;background:#fff;display:block;"></span>
+              <span style="width:8px;height:8px;border-radius:50%;background:#fff;display:block;"></span>
+            </div>
+            <span style="font-family:'Nunito',sans-serif;font-size:1.05rem;font-weight:300;color:#fff;letter-spacing:.04em;">immersa academy</span>
           </div>
-          <span style="font-family:'Nunito',sans-serif;font-size:1.05rem;font-weight:300;color:#fff;letter-spacing:.04em;">immersa academy</span>
+          <div style="font-family:'Nunito',sans-serif;font-size:.62rem;color:rgba(255,255,255,.55);letter-spacing:.06em;margin-top:3px;">by teacher Isa</div>
         </div>
-        <div style="font-family:'Nunito',sans-serif;font-size:.62rem;color:rgba(255,255,255,.55);letter-spacing:.06em;margin-top:3px;margin-left:42px;">by teacher Isa</div>
-      </div>
-      <div class="logo">🎧</div>
-      <h1>Shadow the Scene</h1>
-      <p style="font-family:'Nunito',sans-serif;font-size:.72rem;font-weight:400;color:rgba(255,255,255,.45);letter-spacing:.18em;text-transform:uppercase;margin-bottom:6px;">Listening Lab</p>
-      <p>Mejora tu inglés con videos reales</p>
-      <div class="url-row">
-        <input id="url-input" class="url-input" type="text"
-          placeholder="Pega aquí el link del video" />
-      </div>
-      <button class="btn-primary" style="width:100%" onclick="handleUrl()">▶ Comenzar Actividad</button>
-      <div id="url-error" class="url-error"></div>
-
-      <!-- Search videos -->
-      <div class="search-section">
-        <div class="featured-label">🔍 Buscar videos</div>
-        <div class="search-box">
-          <input class="search-input" id="search-input" type="text"
-            placeholder="Buscar por título…"
-            onkeydown="if(event.key==='Enter')searchVideos()">
-          <button class="search-btn" onclick="searchVideos()">Buscar</button>
+        <div class="logo">🎧</div>
+        <h1>Shadow the Scene</h1>
+        <p style="font-family:'Nunito',sans-serif;font-size:.72rem;font-weight:400;color:rgba(255,255,255,.45);letter-spacing:.18em;text-transform:uppercase;">Listening Lab</p>
+        <p class="tagline">Mejora tu inglés con videos reales</p>
+        <div class="url-row">
+          <input id="url-input" class="url-input" type="text"
+            placeholder="Pega aquí el link del video" />
         </div>
-        <div class="search-results" id="search-results"></div>
+        <button class="btn-primary" style="width:100%" onclick="handleUrl()">▶ Comenzar Actividad</button>
+        <div id="url-error" class="url-error"></div>
+        <div class="badges">
+          <span class="badge">▶ YouTube</span>
+          <span class="badge">▶ Vimeo</span>
+        </div>
       </div>
 
-      <!-- Featured videos -->
-      <div class="featured-section">
-        <div class="featured-label">🎬 Videos listos para practicar</div>
-        <div class="vid-grid" id="featured-grid">
-          <!-- Cards generated by initFeaturedVideos() -->
+      <!-- ── PANEL DERECHO ── -->
+      <div class="url-right">
+        <!-- Search videos -->
+        <div class="search-section">
+          <div class="featured-label">🔍 Buscar videos</div>
+          <div class="search-box">
+            <input class="search-input" id="search-input" type="text"
+              placeholder="Buscar por título…"
+              onkeydown="if(event.key==='Enter')searchVideos()">
+            <button class="search-btn" onclick="searchVideos()">Buscar</button>
+          </div>
+          <div class="search-results" id="search-results"></div>
+        </div>
+
+        <!-- Featured videos -->
+        <div class="featured-section">
+          <div class="featured-label">🎬 Videos listos para practicar</div>
+          <div class="vid-grid" id="featured-grid">
+            <!-- Cards generated by initFeaturedVideos() -->
+          </div>
         </div>
       </div>
+
     </div>
   </div>
 </div>
