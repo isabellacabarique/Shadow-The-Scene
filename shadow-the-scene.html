@@ -373,13 +373,19 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-heigh
 }
 
 /* ── RESPONSIVE (móvil) ── */
+@media(max-width:900px){
+  .url-card{height:auto;}
+  #screen-url .center{align-items:flex-start;}
+  .url-right{overflow-y:visible;}
+}
+
 @media(max-width:600px){
 
   /* ── Pantalla principal ── */
-  #screen-url .center{padding:12px 10px;}
-  .url-card{flex-direction:column;border-radius:16px;max-width:100%;}
+  #screen-url .center{padding:12px 10px;align-items:flex-start;}
+  .url-card{flex-direction:column;border-radius:16px;max-width:100%;height:auto;}
   .url-left{width:100%;border-right:none;border-bottom:1px solid rgba(255,255,255,.08);padding:32px 20px;}
-  .url-right{padding:24px 20px;}
+  .url-right{padding:24px 20px;overflow-y:visible;}
   .url-card h1{font-size:1.8rem;}
   .url-row{flex-direction:column;}
   .vid-grid{grid-template-columns:1fr 1fr;}
