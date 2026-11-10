@@ -309,7 +309,7 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-heigh
 .lbox.lbox-bad{color:#ef9a9a;border-color:#e53935;background:rgba(229,57,53,.12);border-radius:2px;}
 .lbox.lbox-locked{border-color:rgba(255,255,255,.18);}
 /* Practice mode: word-as-text entry (no visible boxes) */
-.prac-word-entry{position:relative;display:inline;cursor:text;}
+.prac-word-entry{position:relative;display:inline-block;cursor:text;vertical-align:baseline;}
 .prac-word-ghost{opacity:.45;}
 .prac-word-typed{position:absolute;left:0;top:0;color:#fff;white-space:pre;pointer-events:none;}
 .lbox-hidden{position:absolute;left:0;top:0;width:100%;height:100%;
@@ -906,7 +906,7 @@ function pickPractice(){
   S.initMaxTime=S.maxTime=60;
   S.initLives=99;
   S.blankAll=true;
-  S.showPct=30;
+  S.showPct=0;
   S.practiceMode=true;
   S.mode='typing';
   show('screen-loading');
@@ -1302,6 +1302,18 @@ function makeBlanks(caps,pct,phraseLen){
     return capScores.slice(0,n)
       .sort((a,b)=>a.cap.start-b.cap.start)
       .map(({cap})=>({cap,word:cap.text,wt:10,pos:0,fullSentence:true}));
+  }
+
+  // ── Practice mode: blank EVERY word ─────────────────────────────────────
+  if(S.practiceMode){
+    const result=[];
+    for(const cap of caps){
+      const words=[...cap.text.matchAll(/\b[a-zA-Z'][a-zA-Z']*\b/g)]
+        .map(m=>({word:m[0],pos:m.index}));
+      words.forEach(({word,pos})=>result.push({cap,word,wt:5,pos}));
+    }
+    result.sort((a,b)=>a.cap.start!==b.cap.start?a.cap.start-b.cap.start:a.pos-b.pos);
+    return result;
   }
 
   // ── blankAll modes: advanced (show first 30%) and expert (show opening words) ─
