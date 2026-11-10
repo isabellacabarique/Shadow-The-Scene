@@ -746,6 +746,13 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-heigh
     <button class="btn-replay" onclick="replaySeg()">🔁 Repetir audio</button>
     <button class="btn-report" id="report-btn" onclick="reportError()">🚩 Reportar error</button>
   </div>
+  <!-- Persistent input anchor: keeps mobile keyboard open in practice mode -->
+  <input id="prac-master-input" type="text" inputmode="text"
+    autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false"
+    aria-hidden="true" tabindex="-1"
+    style="position:fixed;width:2px;height:2px;opacity:.01;bottom:30%;left:50%;
+           border:0;padding:0;caret-color:transparent;background:transparent;
+           color:transparent;outline:none;z-index:-1;">
   <!-- Transcript with inline blanks -->
   <div class="sentence-bar" id="sentence-bar">…</div>
   <!-- Options bar (selection mode only) -->
@@ -1780,7 +1787,51 @@ function setupTypGroup(group){
   S._typGroup=group;
   S._typTyped=group.map(()=>'');
   S._typWordIdx=0;
-  setTimeout(()=>focusLboxWord(group[0]),80);
+  if(S.practiceMode){
+    focusMasterInput();
+  }else{
+    setTimeout(()=>focusLboxWord(group[0]),80);
+  }
+}
+
+function focusMasterInput(){
+  const mi=document.getElementById('prac-master-input');
+  if(!mi) return;
+  mi.value='';
+  // Attach handler fresh each time (in case it was replaced)
+  mi.oninput=handleMasterInput;
+  mi.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();}};
+  // Focus without setTimeout to preserve mobile gesture chain
+  try{mi.focus();}catch(e){}
+}
+
+function handleMasterInput(){
+  const mi=document.getElementById('prac-master-input');
+  if(!mi||!S.practiceMode||S.answered) return;
+  const val=mi.value.replace(/[^a-zA-Z''\-]/g,'');
+  mi.value=val; // strip non-letter chars back
+  const group=S._typGroup;
+  if(!group) return;
+  const gi=S._typWordIdx||0;
+  if(gi>=group.length) return;
+  const bi=group[gi];
+  const word=S.blanks[bi].word;
+  // Update typed display
+  const typedEl=document.getElementById(`prac-t-${bi}`);
+  if(typedEl) typedEl.textContent=val;
+  if(val.length>=word.length){
+    const typed=val.slice(0,word.length);
+    mi.value=''; // clear for next word — keyboard stays open
+    const ok=norm(typed)===norm(word);
+    S.blankResults[bi]={ok,correct:word,given:typed};
+    lockLboxWord(bi,typed,word);
+    if(gi+1<group.length){
+      S._typWordIdx=gi+1;
+      // No focus needed — master input already focused
+    }else{
+      setTimeout(()=>submitLetterTyping(group),250);
+    }
+  }
 }
 
 function focusLboxWord(bi){
@@ -1905,6 +1956,8 @@ function submitSelInline(group){
 
 function attachInlineInputs(activeIdx){
   if(S.answered) return;
+  // Practice mode uses master input — no per-word handlers needed
+  if(S.practiceMode) return;
   const group=sentenceGroup(activeIdx);
   if(S.mode==='typing') document.getElementById('sel-options-bar').style.display='none';
 
@@ -2237,7 +2290,13 @@ function nextBlank(){
 }
 function goToLevel(){
   clearTimer();clearSentenceTimer();pausePlay();
+  blurMasterInput();
   show('screen-level');
+}
+
+function blurMasterInput(){
+  const mi=document.getElementById('prac-master-input');
+  if(mi){mi.oninput=null;mi.onkeydown=null;mi.blur();}
 }
 function togglePause(){
   S.paused=!S.paused;
@@ -2250,7 +2309,7 @@ function showHelp(){
 }
 
 function endGame(){
-  clearTimer();pausePlay();
+  clearTimer();pausePlay();blurMasterInput();
   const total=S.blanks.length,done=S.cor+S.err;
   const acc=total>0?Math.round((S.cor/total)*100):0;
   const comp=total>0?Math.round((done/total)*100):0;
