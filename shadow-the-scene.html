@@ -1938,15 +1938,16 @@ function attachInlineInputs(activeIdx){
         // Word complete
         const typed=val.slice(0,word.length);
         inp.value=typed;
-        lockLboxWord(bi,typed,word);
         const ok=norm(typed)===norm(word);
         S.blankResults[bi]={ok,correct:word,given:typed};
         if(gi+1<group.length){
-          setTimeout(()=>{
-            if(S._typWordIdx!==undefined) S._typWordIdx=gi+1;
-            focusLboxWord(group[gi+1]);
-          },150);
+          // Focus NEXT input BEFORE disabling current so mobile keyboard stays open
+          const nextInp=document.getElementById(`iblk-${group[gi+1]}`);
+          if(nextInp&&!nextInp.disabled) nextInp.focus();
+          lockLboxWord(bi,typed,word);
+          if(S._typWordIdx!==undefined) S._typWordIdx=gi+1;
         } else {
+          lockLboxWord(bi,typed,word);
           setTimeout(()=>submitLetterTyping(group),250);
         }
       }
