@@ -554,10 +554,10 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-heigh
               <input type="radio" name="vidrange" value="custom">
               <label>Elegir mi propio segmento ✂️</label>
               <div class="range-custom-row" id="range-custom-row">
-                del min <input class="range-min" id="range-from" type="number" min="0" max="999" value="0"
-                  onclick="event.stopPropagation()" oninput="event.stopPropagation()">
-                al min <input class="range-min" id="range-to" type="number" min="1" max="999" value="10"
-                  onclick="event.stopPropagation()" oninput="event.stopPropagation()">
+                de <input class="range-min" id="range-from" type="text" placeholder="0:00" value=""
+                  style="width:68px;" onclick="event.stopPropagation()" oninput="event.stopPropagation()">
+                a <input class="range-min" id="range-to" type="text" placeholder="10:00" value=""
+                  style="width:68px;" onclick="event.stopPropagation()" oninput="event.stopPropagation()">
               </div>
             </div>
           </div>
@@ -871,6 +871,21 @@ function selectRangeOpt(type){
   S._rangeType=type;
 }
 
+function parseTimeInput(val){
+  // Accepts: "2:31", "2:31:00", "150" (seconds), "2.5" (minutes), "2m31s"
+  if(!val||!val.trim()) return null;
+  val=val.trim().replace(/\s/g,'');
+  // mm:ss or h:mm:ss
+  if(/^\d+:\d{1,2}(:\d{1,2})?$/.test(val)){
+    const parts=val.split(':').map(Number);
+    if(parts.length===2) return parts[0]*60+parts[1];
+    if(parts.length===3) return parts[0]*3600+parts[1]*60+parts[2];
+  }
+  // plain number → seconds
+  const n=parseFloat(val);
+  return isNaN(n)?null:Math.round(n*60); // treat plain number as minutes
+}
+
 function confirmRange(){
   const type=S._rangeType||'all';
   if(type==='all'){
@@ -878,10 +893,15 @@ function confirmRange(){
   }else if(type==='first5'){
     S.startSec=0; S.endSec=300;
   }else{
-    const from=parseInt(document.getElementById('range-from').value)||0;
-    const to=parseInt(document.getElementById('range-to').value)||10;
-    if(to<=from){alert('El minuto final debe ser mayor que el inicial.');return;}
-    S.startSec=from*60; S.endSec=to*60;
+    const fromRaw=document.getElementById('range-from').value;
+    const toRaw=document.getElementById('range-to').value;
+    const from=parseTimeInput(fromRaw)??0;
+    const to=parseTimeInput(toRaw);
+    if(to===null||to<=from){
+      alert('Ingresa un tiempo válido (ej: 2:31). El tiempo final debe ser mayor que el inicial.');
+      return;
+    }
+    S.startSec=from; S.endSec=to;
   }
   document.getElementById('range-panel').classList.remove('active');
   show('screen-level');
