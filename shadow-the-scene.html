@@ -959,7 +959,10 @@ function initFeaturedVideos(){
         const src=d.thumbnail_url.replace(/(_\d+x\d+)(\?|$)/,'_640x360$2');
         card.querySelector('.vid-thumb').innerHTML=`<img src="${src}" alt="${d.title||v.title}" style="width:100%;height:100%;object-fit:cover;display:block;">`;
       }
-      if(d.title) card.querySelector('.vid-title').textContent=d.title;
+      if(d.title){
+        card.querySelector('.vid-title').textContent=d.title;
+        v.title=d.title; // ← save real title back to array so search works
+      }
     }).catch(()=>{});
   });
 }
@@ -972,7 +975,7 @@ function searchVideos(){
   container.innerHTML='';
   if(!q)return;
   const matches=FEATURED_VIDEOS.filter(v=>
-    v.title.toLowerCase().includes(q)||v.sub.toLowerCase().includes(q)
+    v.title.toLowerCase().includes(q)||(v.sub||'').toLowerCase().includes(q)
   );
   if(matches.length===0){
     container.innerHTML=`<div class="search-empty">No encontramos videos con ese término en nuestra biblioteca.<br>¿Tienes el link del video? Pégalo arriba y empieza a practicar.</div>`;
