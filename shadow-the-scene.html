@@ -20,6 +20,23 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-heigh
 .screen{display:none;min-height:100vh;flex-direction:column;}
 .screen.active{display:flex;}
 
+/* ── ACCESS GATE ── */
+#access-gate{position:fixed;inset:0;background:var(--bg);z-index:9999;
+  display:flex;align-items:center;justify-content:center;}
+#access-gate.hidden{display:none;}
+.gate-box{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);
+  border-radius:20px;padding:48px 40px;max-width:360px;width:90%;text-align:center;display:flex;flex-direction:column;gap:16px;}
+.gate-logo{font-size:3rem;}
+.gate-title{font-size:1.6rem;font-weight:700;
+  background:linear-gradient(90deg,#64b5f6,#a78bfa);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.gate-sub{font-size:.88rem;color:rgba(255,255,255,.5);}
+.gate-input{padding:14px 18px;border-radius:12px;border:2px solid rgba(255,255,255,.18);
+  background:rgba(255,255,255,.08);color:#fff;font-size:1rem;outline:none;
+  transition:border-color .2s;text-align:center;letter-spacing:.08em;}
+.gate-input:focus{border-color:#64b5f6;}
+.gate-err{color:#ef9a9a;font-size:.82rem;min-height:1.2em;}
+
 /* ── SHARED ── */
 .btn-primary{padding:14px 28px;border-radius:12px;border:none;
   background:linear-gradient(135deg,#4c8eff,#9c27b0);
@@ -504,8 +521,23 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-heigh
 <body>
 
 
+<!-- ══ ACCESS GATE ══ -->
+<div id="access-gate">
+  <div class="gate-box">
+    <div class="gate-logo">🎧</div>
+    <div class="gate-title">Listening Lab</div>
+    <div class="gate-sub">Ingresa la contraseña para continuar</div>
+    <input id="gate-input" class="gate-input" type="password"
+      placeholder="Contraseña"
+      onkeydown="if(event.key==='Enter')checkGate()"
+      autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false">
+    <button class="btn-primary" onclick="checkGate()">Entrar →</button>
+    <div class="gate-err" id="gate-err"></div>
+  </div>
+</div>
+
 <!-- ══ SCREEN 1: URL ══ -->
-<div id="screen-url" class="screen active">
+<div id="screen-url" class="screen">
   <!-- Barra superior izquierda -->
   <div class="brand-bar">
     <span class="brand-bar-title" onclick="show('screen-url')">Listening Lab &nbsp;|&nbsp; <span>Shadow the Scene</span></span>
@@ -808,6 +840,33 @@ body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-heigh
 </div>
 
 <script>
+
+// ── Access gate ───────────────────────────────────────────────────────────────
+(function(){
+  const KEY='ll_access';
+  if(sessionStorage.getItem(KEY)==='1'){
+    document.getElementById('access-gate').classList.add('hidden');
+    document.getElementById('screen-url').classList.add('active');
+  }else{
+    setTimeout(()=>document.getElementById('gate-input')?.focus(),200);
+  }
+})();
+
+function checkGate(){
+  const val=document.getElementById('gate-input').value.trim().toLowerCase();
+  const err=document.getElementById('gate-err');
+  if(val==='teaherisalab'){
+    sessionStorage.setItem('ll_access','1');
+    document.getElementById('access-gate').classList.add('hidden');
+    document.getElementById('screen-url').classList.add('active');
+  }else{
+    err.textContent='Contraseña incorrecta. Inténtalo de nuevo.';
+    document.getElementById('gate-input').value='';
+    document.getElementById('gate-input').focus();
+    setTimeout(()=>{err.textContent='';},2500);
+  }
+}
+// ─────────────────────────────────────────────────────────────────────────────
 
 const S={
   url:'',vid:'',platform:'',hash:null,
